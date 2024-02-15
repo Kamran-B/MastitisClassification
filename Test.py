@@ -7,8 +7,8 @@ from tqdm import tqdm
 
 print("about to load data")
 # Load your dataset
-file_path = './CSC487_Project_Data/data/output_hd_exclude.raw'
-file_path2 = './CSC487_Project_Data/data/mast_lact1.phen'
+file_path = './output_hd_exclude.raw'
+file_path2 = './mast_lact1.phen'
 # Assuming your data is space-separated
 delimiter = ' '
 
