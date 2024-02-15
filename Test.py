@@ -1,4 +1,5 @@
 import dask
+
 dask.config.set({'dataframe.query-planning': True})
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -23,11 +24,10 @@ with open(file_path, 'r') as file:
         print("Line " + str(i) + " done.")
         row = line.strip().split(delimiter)
         data.append(row)
+        print(row)
         i += 1
 
-print("Done Loading CSV")
-
-print(data)
+#print("Done Loading Data")
 
 # Assuming the last column is the target variable
 X = [row[6:-1] for row in data]
@@ -38,7 +38,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 print(X_train)
 
-#Ensure that X_train and X_test have at least one feature
+# Ensure that X_train and X_test have at least one feature
 if not X_train or not any(X_train):
     raise ValueError("X_train does not contain valid features.")
 if not X_test or not any(X_test):
