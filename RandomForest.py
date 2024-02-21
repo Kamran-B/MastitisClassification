@@ -44,51 +44,37 @@ with open(file_path2, 'r') as file:
 
 print("Done Loading CSV")
 data = data[1:]
-print(data[1][:10])
-print(data[2][:10])
-print(data2[1][0])
+
 # Convert values to integers for both data and data2
 for row in tqdm(data, desc="Converting data to integers", unit="row"):
     for i in range(2, len(row)):
         row[i] = int(row[i])
-
 for row in tqdm(data2, desc="Converting data2 to integers", unit="row"):
     for i in range(2, len(row)):
         row[i] = int(row[i])
-data = data[1:]
-print(data[1][:10])
-print(data[2][:10])
-print(data2[1][0])
+
+
 # Extract first column values from both arrays
 col1_data = set(row[0] for row in data)
 col1_data2 = set(row[0] for row in data2)
 
 # Find common values in the first column
 common_values = col1_data.intersection(col1_data2)
-print(len(common_values))
+
 # Filter both arrays to keep only the common values
 data_filtered = [row for row in data if row[0] in common_values]
 data2_filtered = [row for row in data2 if row[0] in common_values]
-print(data_filtered[0][:5])
-print(data2_filtered[0][:5])
-# Sort both arrays based on the first column of data
+
 # Sort both arrays based on the first column of data
 data_sorted = sorted(data_filtered, key=lambda x: x[0])
 data2_sorted = sorted(data2_filtered, key=lambda x: x[0])
-print(data_sorted[0][:10])
-print(data2_sorted[0])
-print(data_sorted[1][:10])
-print(data2_sorted[1])
-print(data_sorted[2][:10])
-print(data2_sorted[2])
 
 X = [row[6:] for row in data_sorted]
 y = [row[2] for row in data2_sorted]
 
-print(X[0][:7])
-print(y[:8])
-
-
+print(X[0][:10])
+print(y[:10])
+print(X[1][:10])
 # Split the dataset into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -119,7 +105,7 @@ best_params = {
     'max_features': 'sqrt',
     'min_samples_leaf': 1,
     'min_samples_split': 2,
-    'n_estimators': 300
+    'n_estimators': 700
 }
 
 # Create a RandomForestClassifier with the best hyperparameters
