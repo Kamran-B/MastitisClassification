@@ -1,4 +1,4 @@
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
@@ -9,7 +9,8 @@ print("about to load data")
 # Load your dataset
 file_path = './output_hd_exclude.raw'
 file_path2 = './mast_lact1.phen'
-# Assuming your data is space-separated
+
+# Data is space-separated
 delimiter = ' '
 
 # Read the raw file and create a 2D array
@@ -20,13 +21,10 @@ i = 1
 with open(file_path, 'r') as file:
     # Skip the header if present
     header = file.readline()
-
     # Get the total number of lines in the file for progress bar
     total_lines = sum(1 for _ in file)
-
     # Return to the beginning of the file
     file.seek(0)
-
     # Create a tqdm progress bar for the loop
     for line in tqdm(file, total=total_lines, desc="Processing file 1", unit="line"):
         row = line.strip().split(delimiter)
@@ -36,10 +34,8 @@ with open(file_path, 'r') as file:
 with open(file_path2, 'r') as file:
     # Get the total number of lines in the file for progress bar
     total_lines = sum(1 for _ in file)
-
     # Return to the beginning of the file
     file.seek(0)
-
     # Create a tqdm progress bar for the loop
     for line in tqdm(file, total=total_lines, desc="Processing file 2", unit="line"):
         row = line.strip().split(delimiter)
@@ -48,14 +44,15 @@ with open(file_path2, 'r') as file:
 
 print("Done Loading CSV")
 data = data[1:]
+
 # Convert values to integers for both data and data2
 for row in tqdm(data, desc="Converting data to integers", unit="row"):
     for i in range(2, len(row)):
         row[i] = int(row[i])
-
 for row in tqdm(data2, desc="Converting data2 to integers", unit="row"):
     for i in range(2, len(row)):
         row[i] = int(row[i])
+
 
 # Extract first column values from both arrays
 col1_data = set(row[0] for row in data)
@@ -70,22 +67,17 @@ data2_filtered = [row for row in data2 if row[0] in common_values]
 
 # Sort both arrays based on the first column of data
 data_sorted = sorted(data_filtered, key=lambda x: x[0])
-data2_sorted = [row2 for _, row2 in sorted(zip(data_sorted, data2_filtered), key=lambda x: x[0][0])]
+data2_sorted = sorted(data2_filtered, key=lambda x: x[0])
 
 X = [row[6:] for row in data_sorted]
 y = [row[2] for row in data2_sorted]
 
-print(y[0])
-print(y)
-
-print(y.count(0)/len(y))
-
-
-
+print(X[0][:10])
+print(y[:10])
+print(X[1][:10])
 # Split the dataset into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-#print(X_train)
 
 #Ensure that X_train and X_test have at least one feature
 if not X_train or not any(X_train):
@@ -95,41 +87,46 @@ if not X_test or not any(X_test):
 
 print("about to train model")
 # Create a random forest classifier
-rf_model = RandomForestClassifier(n_estimators=100, random_state=42, verbose=1)
+rf_model = RandomForestClassifier(random_state=42)
 
-# Train the model and track training and validation accuracy over different numbers of trees
-train_accuracies = []
-val_accuracies = []
+# Define the hyperparameter grid
+param_grid = {
+    'n_estimators': [50, 100, 200, 300],
+    'max_depth': [None, 10, 20, 30],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4],
+    'max_features': ['auto', 'sqrt', 'log2'],
+    'bootstrap': [True, False]
+}
 
-for n_trees in range(1, 5):  # Assuming a range from 1 to 100 trees
-    rf_model.set_params(n_estimators=n_trees)
-    rf_model.fit(X_train, y_train)
+best_params = {
+    'bootstrap': False,
+    'max_depth': 20,
+    'max_features': 'sqrt',
+    'min_samples_leaf': 1,
+    'min_samples_split': 2,
+    'n_estimators': 700
+}
 
-    print(n_trees)
-    # Calculate training accuracy
-    y_train_pred = rf_model.predict(X_train)
-    train_accuracy = accuracy_score(y_train, y_train_pred)
-    train_accuracies.append(train_accuracy)
+# Create a RandomForestClassifier with the best hyperparameters
+best_rf_model = RandomForestClassifier(**best_params, random_state=42)
 
-    # Calculate validation accuracy
-    y_val_pred = rf_model.predict(X_test)
-    val_accuracy = accuracy_score(y_test, y_val_pred)
-    val_accuracies.append(val_accuracy)
+# Train the model
+best_rf_model.fit(X_train, y_train)
 
-# Plot the training and validation accuracy over different numbers of trees
-plt.plot(range(1, 5), train_accuracies, label='Training Accuracy')
-plt.plot(range(1, 5), val_accuracies, label='Validation Accuracy')
-plt.xlabel('Number of Trees (Estimators)')
-plt.ylabel('Accuracy')
-plt.title('Training and Validation Accuracy over Number of Trees')
-plt.legend()
-plt.show()
-
-'''
 # Make predictions on the test set
-y_pred = rf_model.predict(X_test)
+y_pred = best_rf_model.predict(X_test)
 
 # Evaluate the model
 accuracy = accuracy_score(y_test, y_pred)
 print(f'Test Accuracy: {accuracy}')
+
+'''
+# Plot the feature importances if needed
+feature_importances = best_rf_model.feature_importances_
+plt.bar(range(len(feature_importances)), feature_importances)
+plt.xlabel('Feature Index')
+plt.ylabel('Feature Importance')
+plt.title('Random Forest Feature Importances')
+plt.show()
 '''
