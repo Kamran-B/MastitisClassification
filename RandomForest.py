@@ -43,7 +43,7 @@ def duplicate_and_insert(original_list, target_list, original_target_labels, tar
 
 
 # This ensures that between runs the random placements of the duplicate data stays the same
-seed_value = 44
+seed_value = 42
 
 # Duplicate and insert rows in the training set
 X_train_augmented = X_train.copy()
