@@ -1,0 +1,89 @@
+Acc: 0.713541
+n_estimators=30,
+    max_features=mtry,
+    random_state=42,
+    min_samples_split=10,
+    min_samples_leaf=5,
+    max_depth=10,
+    class_weight={0:1, 1:4000},
+    oob_score=True,
+    verbose=2,
+    n_jobs=2,
+
+ Acc: 0.714088
+ Same as above just with 16 duplicates of the mastitis genome instead of 18
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Old data loading code
+'''
+with open(file_path, 'r') as file:
+    # Skip the header if present
+    header = file.readline()
+    # Get the total number of lines in the file for progress bar
+    total_lines = sum(1 for _ in file)
+    # Return to the beginning of the file
+    file.seek(0)
+    # Create a tqdm progress bar for the loop
+    for line in tqdm(file, total=total_lines, desc="Processing file 1", unit="line"):
+        row = line.strip().split(delimiter)
+        data.append(row)
+        i += 1
+
+with open(file_path2, 'r') as file:
+    # Get the total number of lines in the file for progress bar
+    total_lines = sum(1 for _ in file)
+    # Return to the beginning of the file
+    file.seek(0)
+    # Create a tqdm progress bar for the loop
+    for line in tqdm(file, total=total_lines, desc="Processing file 2", unit="line"):
+        row = line.strip().split(delimiter)
+        data2.append(row)
+        i += 1
+
+print("Done Loading CSV")
+data = data[1:]
+
+# Convert values to integers for both data and data2
+for row in tqdm(data, desc="Converting data to integers", unit="row"):
+    for i in range(2, len(row)):
+        row[i] = int(row[i])
+for row in tqdm(data2, desc="Converting data2 to integers", unit="row"):
+    for i in range(2, len(row)):
+        row[i] = int(row[i])
+
+
+# Extract first column values from both arrays
+col1_data = set(row[0] for row in data)
+col1_data2 = set(row[0] for row in data2)
+
+# Find common values in the first column
+common_values = col1_data.intersection(col1_data2)
+
+# Filter both arrays to keep only the common values
+data_filtered = [row for row in data if row[0] in common_values]
+data2_filtered = [row for row in data2 if row[0] in common_values]
+
+# Sort both arrays based on the first column of data
+data_sorted = sorted(data_filtered, key=lambda x: x[0])
+data2_sorted = sorted(data2_filtered, key=lambda x: x[0])
+
+X = [row[6:] for row in data_sorted]
+y = [row[2] for row in data2_sorted]
+'''
