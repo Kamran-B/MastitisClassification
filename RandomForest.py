@@ -1,10 +1,9 @@
 import random
 import numpy as np
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 from to_array import bit_reader
 
 def read_numbers_from_file(file_path):
@@ -20,6 +19,7 @@ def read_numbers_from_file(file_path):
         print(f"An error occurred: {e}")
     return numbers
 
+
 X = bit_reader("output_hd_exclude_binary.txt")
 y = read_numbers_from_file('mast_lact1_sorted.txt')
 
@@ -30,6 +30,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 del X, y
 
 '''Iterates through the training data and adds rows for oversampling'''
+
+
 # Function to duplicate rows and insert at random positions
 def duplicate_and_insert(original_list, target_list, original_target_labels, target_labels, label_value, num_duplicates,
                          seed=None):
@@ -48,24 +50,24 @@ seed_value = 42
 # Duplicate and insert rows in the training set
 X_train_augmented = X_train.copy()
 y_train_augmented = y_train.copy()
-duplicate_and_insert(X_train, X_train_augmented, y_train, y_train_augmented, 1, 18, seed=seed_value)
+duplicate_and_insert(X_train, X_train_augmented, y_train, y_train_augmented, 1, 16, seed=seed_value)
 
 # Duplicate and insert rows in the test set
 X_test_augmented = X_test.copy()
 y_test_augmented = y_test.copy()
-duplicate_and_insert(X_test, X_test_augmented, y_test, y_test_augmented, 1, 18, seed=seed_value)
+duplicate_and_insert(X_test, X_test_augmented, y_test, y_test_augmented, 1, 16, seed=seed_value)
 
 # Deletes from memory to free up RAM space
 del X_train, X_test, y_train, y_test
 
 # Set the parameters based on the research findings
 n_trees = 30  # Ntree
-mtry_fraction = 0.01  # Mtry as a fraction of the total number of predictors
+mtry_fraction = 0.01  # Mtry as a fraction of the total number of predictors (0.01 seems to be best)
 
 # Calculate the actual Mtry value based on the fraction
 num_predictors = len(X_train_augmented[0])
 mtry = int(np.ceil(mtry_fraction * num_predictors))
-
+print("Number of predictors: ", num_predictors)
 
 # Create a RandomForestClassifier with the best hyperparameters
 random_forest_model = RandomForestClassifier(
@@ -75,13 +77,14 @@ random_forest_model = RandomForestClassifier(
     min_samples_split=10,
     min_samples_leaf=5,
     max_depth=10,
-    class_weight={0:1, 1:4000},
+    class_weight={0: 1, 1: 4000},
     oob_score=True,
     verbose=2,
+
+    # If you have issues try changing this to 1
     n_jobs=4,
 )
 
-print("about to train model")
 # Train the model
 random_forest_model.fit(X_train_augmented, y_train_augmented)
 
@@ -96,7 +99,7 @@ print(f'Test Accuracy: {accuracy}')
 
 feature_importances = random_forest_model.feature_importances_
 
-# Set a threshold for importance score (adjust based on your analysis)
+# Threshold for the importance of SNPs
 threshold = 0.005
 
 # Identify important SNP indices based on importance scores
@@ -106,7 +109,7 @@ important_snp_indices = [i for i, importance in enumerate(feature_importances) i
 important_snps = [[cow[i] for i in important_snp_indices] for cow in X_train_augmented + X_test_augmented]
 
 # Assuming you have a list of SNP labels (e.g., ['SNP1', 'SNP2', ...])
-snp_labels = ['SNP{}'.format(i+1) for i in range(len(important_snp_indices))]
+snp_labels = ['SNP{}'.format(i + 1) for i in range(len(important_snp_indices))]
 
 # Plotting the importance scores
 plt.figure(figsize=(10, 6))
