@@ -1,12 +1,36 @@
 import os
 from tqdm import tqdm
+
+
 def bit_reader(input_file, chunk_size=1024):
+    """
+    Reads a binary file and processes its bits in chunks.
+
+    Args:
+        input_file (str): Path to the input binary file.
+        chunk_size (int, optional): Size of each data chunk to read from the file. Defaults to 1024.
+
+    Returns:
+        list: A list of lists representing the bits read from the file. Each sublist contains
+        a sequence of bits read from the file, represented as integers (0, 1, or 2).
+        The integers represent the bit pairs decoded as follows:
+        - (0, 0): Represented as 0
+        - (0, 1): Represented as 1
+        - (1, 0): Represented as 2
+        - (1, 1): Starts a new sequence in the output list
+
+    Note:
+        This function assumes the input file contains binary data.
+        Each byte in the file is processed to extract pairs of bits.
+        The progress of reading the file is displayed using tqdm.
+    """
     arr = []
     current = []
 
     try:
         file_size = os.path.getsize(input_file)
-        with open(input_file, 'rb') as file, tqdm(total=file_size, unit='B', unit_scale=True, desc="Reading bits") as pbar:
+        with open(input_file, 'rb') as file, tqdm(total=file_size, unit='B', unit_scale=True,
+                                                  desc="Reading bits") as pbar:
             while True:
                 # Read a chunk of data from the binary file
                 chunk = file.read(chunk_size)

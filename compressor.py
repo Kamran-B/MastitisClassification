@@ -3,6 +3,7 @@ from tqdm import tqdm
 import concurrent.futures
 
 
+# Reads the first column from three input files, finds the intersection of values in those columns, and returns the lists and their intersection.
 def read_and_intersect(file1_path, file2_path, file3_path):
     def read_first_column(file_path):
         with open(file_path, 'r') as file:
@@ -18,6 +19,7 @@ def read_and_intersect(file1_path, file2_path, file3_path):
     return list1, list2, list3, intersection_list
 
 
+# Filters lines from a file based on whether the first value of each line is present in the provided intersection list, then copies the filtered lines to an output file.
 def filter_and_copy(file_path, intersection_list, output_path):
     with open(file_path, 'r') as input_file, open(output_path, 'w') as output_file:
         lines = input_file.readlines()
@@ -27,6 +29,7 @@ def filter_and_copy(file_path, intersection_list, output_path):
                 output_file.write(line)
 
 
+# Sorts the lines of a file based on the values in their first column.
 def sort_file_by_first_column(file_path):
     with open(file_path, 'r') as file:
         # Read lines from the file
@@ -41,6 +44,7 @@ def sort_file_by_first_column(file_path):
             file.write(line)
 
 
+# Removes the first n values from each line of the input file and writes the remaining values to an output file.
 def remove_first_n_values(input_file, output_file, n):
     with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
         for line in infile:
@@ -54,6 +58,7 @@ def remove_first_n_values(input_file, output_file, n):
             outfile.write(' '.join(remaining_values) + '\n')
 
 
+# Converts characters in a text file to binary and writes the binary representation to an output file with specified chunk size.
 def to_binary(input_file, output_file, chunk_size=8192):
     try:
         with open(input_file, 'r') as file:
@@ -95,40 +100,6 @@ def to_binary(input_file, output_file, chunk_size=8192):
         print(f"An error occurred: {e}")
 
 
-def from_binary(input_file, output_file):
-    try:
-        with open(input_file, 'rb') as file:
-            # Read the entire content of the binary file
-            content = file.read()
-
-            # Open the output file for writing in text mode
-            with open(output_file, 'w') as output:
-                # Iterate over each byte in the content
-                for byte in content:
-                    # Decode two bits at a time
-                    first_bit = (byte & 0b10) >> 1
-                    second_bit = byte & 0b01
-
-                    # Process each pair of bits based on specified conditions
-                    if first_bit == 0 and second_bit == 0:
-                        # Write '0' to the output file
-                        output.write('0')
-                    elif first_bit == 0 and second_bit == 1:
-                        # Write '1' to the output file
-                        output.write('1')
-                    elif first_bit == 1 and second_bit == 0:
-                        # Write '2' to the output file
-                        output.write('2')
-                    elif first_bit == 1 and second_bit == 1:
-                        # Write a newline character to the output file
-                        output.write('\n')
-
-    except FileNotFoundError:
-        print(f"File not found: {input_file}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
-
 # File definition:
 output_hd_exclude = 'output_hd_exclude.raw'
 output_hd_exclude_temp = 'output_hd_exclude_temp.txt'
@@ -156,8 +127,8 @@ remove_first_n_values(mast_lact1_temp, mast_lact1_sorted, 2)
 filter_and_copy(output_hd_exclude, intersection_list, output_hd_exclude_binary)
 sort_file_by_first_column(output_hd_exclude_binary)
 
-print("removing first 6 columns")
 # remove first 6 cols from output_hd_exclude
+print("removing first 6 columns")
 remove_first_n_values(output_hd_exclude_binary, output_hd_exclude_temp, 6)
 
 filter_and_copy(herdxyear_lact1, intersection_list, herdxyear_lact1_temp)
@@ -165,6 +136,6 @@ sort_file_by_first_column(herdxyear_lact1_temp)
 
 remove_first_n_values(herdxyear_lact1_temp, herdxyear_lact1_sorted, 2)
 
-print("compressing to binary")
 # compress output_hd_exclude to binary
+print("compressing to binary")
 to_binary(output_hd_exclude_temp, output_hd_exclude_binary)
