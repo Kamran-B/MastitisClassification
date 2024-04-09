@@ -1,18 +1,21 @@
 import random
+
 import numpy as np
-import tensorflow as tf
-from keras import Sequential, Input, regularizers
+import keras
+from keras import layers, Sequential, Input
 from keras.layers import LSTM, Dense, Dropout
-from keras.src.layers import Bidirectional
+from keras.src.layers import Flatten, Bidirectional, LeakyReLU, GRU, MaxPooling1D, Conv1D
+from keras.src.regularizers import regularizers
+from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils import compute_class_weight
 
 from to_array import bit_reader
 
-tf.keras.backend.clear_session()
-# tf.config.set_visible_devices([], 'GPU')
 
 def duplicate_and_insert(original_list, target_list, original_target_labels, target_labels, label_value, num_duplicates,
-                         seed=42):
+                         seed=40):
     random.seed(seed)
     for d in range(len(original_list)):
         if original_target_labels[d] == label_value:
@@ -21,7 +24,7 @@ def duplicate_and_insert(original_list, target_list, original_target_labels, tar
                 target_list.insert(random_position, original_list[d].copy())
                 target_labels.insert(random_position, label_value)
 
-def preprocess_data_with_pca(X, y, n_components=1400, test_size=0.2, random_state=42):
+def preprocess_data_with_pca(X, y, n_components=1400, test_size=0.2, random_state=40):
     # Split data into train and test sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
     '''
@@ -45,7 +48,6 @@ def read_numbers_from_file(file_path):
     except Exception as e:
         print(f"An error occurred: {e}")
     return numbers
-
 
 X = bit_reader("output_hd_exclude_binary.txt")
 y = read_numbers_from_file('mast_lact1_sorted.txt')
@@ -74,22 +76,36 @@ X_test = np.array(X_test_augmented)
 del X, y, X_train_augmented, y_train_augmented, X_test_augmented, y_test_augmented
 X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
 X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1]))
+y_train = np.reshape(y_train, (-1, 1, 1))
+y_test = np.reshape(y_test, (-1, 1, 1))
+
+# Define the model
+
+from tensorflow.keras.layers import Input, LSTM, Dense, Dropout
 
 model = Sequential([
-    Input(shape=(1, 624300)),
-    Bidirectional(LSTM(128, return_sequences=True)),  # Bidirectional LSTM
-    Dropout(0.3),
-    Bidirectional(LSTM(64, return_sequences=True)),  # Bidirectional LSTM
-    Dropout(0.3),
+    Input(shape=(624300, 1)),
+    LSTM(128, return_sequences=True),
+    LSTM(64, return_sequences=True),
+    Dropout(0.2),
+    LSTM(64),
+    Dropout(0.2),
     Dense(32, activation='relu'),
     Dense(1, activation='sigmoid')
 ])
 
-# Compile model
-model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
 
-# Train model with class weights
-model.fit(X_train, y_train, epochs=20, batch_size=32, validation_data=(X_test, y_test))
+
+from keras.callbacks import ReduceLROnPlateau
+
+# Define ReduceLROnPlateau callback
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=0.00001)
+
+# Compile model with custom optimizer and callback
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+# Train model with ReduceLROnPlateau callback
+model.fit(X_train, y_train, epochs=8, batch_size=32, validation_data=(X_test, y_test), callbacks=[reduce_lr])
 
 # Evaluate model
 loss, accuracy = model.evaluate(X_test, y_test)
