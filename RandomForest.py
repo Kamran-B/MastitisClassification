@@ -6,6 +6,7 @@ from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 from to_array import bit_reader
 
+
 def read_numbers_from_file(file_path):
     numbers = []
     try:
