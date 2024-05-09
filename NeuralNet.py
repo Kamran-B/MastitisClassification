@@ -9,8 +9,6 @@ from sklearn.model_selection import train_test_split
 from to_array import bit_reader
 
 tf.keras.backend.clear_session()
-
-
 # tf.config.set_visible_devices([], 'GPU')
 
 def duplicate_and_insert(original_list, target_list, original_target_labels, target_labels, label_value, num_duplicates,
@@ -23,7 +21,6 @@ def duplicate_and_insert(original_list, target_list, original_target_labels, tar
                 target_list.insert(random_position, original_list[d].copy())
                 target_labels.insert(random_position, label_value)
 
-
 def preprocess_data_with_pca(X, y, n_components=1400, test_size=0.2, random_state=42):
     # Split data into train and test sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
@@ -35,7 +32,6 @@ def preprocess_data_with_pca(X, y, n_components=1400, test_size=0.2, random_stat
 
     return X_train_pca, X_test_pca, y_train, y_test'''
     return X_train, X_test, y_train, y_test
-
 
 def read_numbers_from_file(file_path):
     numbers = []
@@ -78,9 +74,6 @@ X_test = np.array(X_test_augmented)
 del X, y, X_train_augmented, y_train_augmented, X_test_augmented, y_test_augmented
 X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
 X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1]))
-y_train = y_train.reshape((-1, 1))
-y_test = y_test.reshape((-1, 1))
-
 
 model = Sequential([
     Input(shape=(1, 624300)),
