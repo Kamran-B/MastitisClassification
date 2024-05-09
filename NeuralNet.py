@@ -51,7 +51,7 @@ def read_numbers_from_file(file_path):
     return numbers
 
 
-X = bit_reader("output_hd_exclude_binary.txt")
+X = bit_reader("output_hd_exclude_top_SNPs_binary.txt")
 y = read_numbers_from_file('mast_lact1_sorted.txt')
 
 # Split the dataset into training and testing sets
@@ -83,7 +83,7 @@ y_test = y_test.reshape((-1, 1))
 
 
 model = Sequential([
-    Input(shape=(1, 624300)),
+    Input(shape=(1, 202)),
     Bidirectional(LSTM(128, return_sequences=True)),  # Bidirectional LSTM
     Dropout(0.3),
     Bidirectional(LSTM(64, return_sequences=True)),  # Bidirectional LSTM
@@ -109,5 +109,5 @@ predictions = model.predict(X_test)
 binary_predictions = (predictions > 0.5).astype(int)
 
 # Print actual and predicted values
-for actual, predicted in zip(y_test, binary_predictions):
-    print(f"Actual: {actual}, Predicted: {predicted}")
+# for actual, predicted in zip(y_test, binary_predictions):
+#     print(f"Actual: {actual}, Predicted: {predicted}")
