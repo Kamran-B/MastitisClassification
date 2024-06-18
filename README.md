@@ -15,6 +15,8 @@ cd MastitisClassification
 pip install -r requirements.txt
 
 ```
+### Install Data Files from OneDrive
+Download files in the input data for RR and NN folder to the same folder as the code
 
 ## Usage
 ### Running the Application
