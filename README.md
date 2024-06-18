@@ -11,7 +11,7 @@ cd MastitisClassification
 
 ### Install Dependencies
 ```bash
-# Run this command to install all packages needed
+# Run this command to install all packages needed (this assumes python is already installed)
 pip install -r requirements.txt
 
 ```
