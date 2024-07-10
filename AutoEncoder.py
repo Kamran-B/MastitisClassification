@@ -6,6 +6,7 @@ import tensorflow as tf
 from keras import Sequential, Input, regularizers, layers
 from keras.src.layers import Bidirectional
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
 from to_array import bit_reader
 
@@ -149,6 +150,8 @@ for i in range(len(X_train)):
 print(errors)
 print(np.mean(errors), min(errors), max(errors))
 
+plt.hist(errors, bins=50, label="healthy")
+
 print(f"Mastitis: {len(X_mast)}")
 reconstructions = model.predict(X_mast)
 errors = []
@@ -157,6 +160,13 @@ for i in range(len(X_mast)):
     errors.append(mae)
 print(errors)
 print(np.mean(errors), min(errors), max(errors))
+
+plt.hist(errors, bins=50, label="mastitis")
+plt.xlabel("MAE loss")
+plt.ylabel("No of Animals")
+plt.legend()
+plt.show()
+
 
 """for stat in X_train:
     prediction = model.predict(stat)
