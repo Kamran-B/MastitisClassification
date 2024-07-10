@@ -44,10 +44,10 @@ def removeOnes(x_train, y_train):
     pos_y = []
     for i in range(len(x_train)):
         if y_train[i] == 0:
-            ret_x.append(x_train[i])
+            ret_x.append(x_train[i][:4000])
             ret_y.append(y_train[i])
         else:
-            pos_x.append(x_train[i])
+            pos_x.append(x_train[i][:4000])
             pos_y.append(y_train[i])
     return np.array(ret_x), np.array(ret_y), np.array(pos_x)
 print(1)
@@ -70,14 +70,16 @@ print(1.1)
 del X, y #, X_train_augmented, y_train_augmented, X_test_augmented, y_test_augmented
 #X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
 print(1.2)
-X_train = np.reshape(X_train, (1417, 624300, 1))
+numSNPs = 624300
+numSNPs = 4000
+X_train = np.reshape(X_train, (1417, numSNPs, 1))
 X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1]))
 
 latent_space_size = 50
 print(2)
 model = keras.Sequential([
     # Encoder
-    layers.Input(shape=(624300, 1)),
+    layers.Input(shape=(numSNPs, 1)),
     layers.Conv1D(
         filters=32,
         kernel_size=7,
@@ -100,8 +102,8 @@ model = keras.Sequential([
     layers.Dense(latent_space_size, activation='relu'),
     layers.Dense(256, activation='relu'),
     layers.Dense(512, activation='relu'),
-    layers.Dense(624300 // 4, activation='linear'),
-    layers.Reshape((624300 // 4, 1)),
+    layers.Dense(numSNPs // 4, activation='linear'),
+    layers.Reshape((numSNPs // 4, 1)),
 
     layers.Conv1DTranspose(
         filters=16,
@@ -129,7 +131,7 @@ print("X_train shape:", X_train.shape)
 model.fit(X_train,
           X_train,
           epochs=150,
-          batch_size=16,
+          batch_size=512,
           validation_split=0.1,
           callbacks=[
               keras.callbacks.EarlyStopping(monitor="val_loss", patience=5, mode="min")
