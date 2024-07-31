@@ -1,9 +1,12 @@
 import random
 import numpy as np
+import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers import BertTokenizer, BertForSequenceClassification
+from transformers import BertTokenizer, BertForSequenceClassification, get_linear_schedule_with_warmup
 from sklearn.model_selection import train_test_split
 from to_array import bit_reader
+from transformers import BertForSequenceClassification, AdamW
+from sklearn.metrics import accuracy_score, classification_report
 
 
 def read_numbers_from_file2(file_path):
@@ -31,13 +34,14 @@ def read_numbers_from_file(file_path):
         print(f"An error occurred: {e}")
     return numbers
 
-# Change file names if necessary
-X = bit_reader("output_hd_exclude_top2000SNPs_binary.txt")
-y = read_numbers_from_file('mast_lact1_sorted.txt')
+herd = read_numbers_from_file2('breed_herdxyear_lact1_sorted.txt')
 
-'''for rowX, rowH in zip(X, herd):
+X = bit_reader("output_hd_exclude_4000top_SNPs_binary.txt")
+y = read_numbers_from_file('mast_lact1_sorted_herd.txt')
+
+for rowX, rowH in zip(X, herd):
     for value in rowH:
-        rowX.append(value)'''
+        rowX.append(value)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -91,23 +95,27 @@ test_dataset = GeneticDataset(X_test_augmented, y_test_augmented, tokenizer)
 train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
-import torch
-from transformers import BertForSequenceClassification, AdamW
-from sklearn.metrics import accuracy_score, classification_report
-
-device = torch.device("cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
+# Load the BERT model
 model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=2)
 model.to(device)
 
-optimizer = AdamW(model.parameters(), lr=1e-5)
-loss_fn = torch.nn.CrossEntropyLoss()
+# Define the optimizer
+optimizer = AdamW(model.parameters(), lr=2e-5)
 
-# Training loop
-model.train()
+# Learning rate scheduler
+total_steps = len(train_loader) * 3  # Assuming 3 epochs
+scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
+
+# Loss function
+loss_fn = torch.nn.CrossEntropyLoss()
+# Training loop with learning rate scheduling and evaluation at each epoch
 for epoch in range(3):  # Number of epochs
-    print(len(train_loader))
+    model.train()
+    total_loss = 0
+    i = 0
     for batch in train_loader:
         optimizer.zero_grad()
         inputs = {key: val.to(device) for key, val in batch.items() if key != 'labels'}
@@ -115,34 +123,38 @@ for epoch in range(3):  # Number of epochs
 
         outputs = model(**inputs)
         loss = loss_fn(outputs.logits, labels)
+        total_loss += loss.item()
         loss.backward()
         optimizer.step()
+        scheduler.step()
+        i += 1
+        print(f'Epoch: {epoch}, Loop {i} of {len(train_loader)}, Loss: {loss.item()}, Learning Rate: {optimizer.param_groups[0]["lr"]}')
 
-        print(f'Epoch: {epoch}, Loss: {loss.item()}')
+    avg_train_loss = total_loss / len(train_loader)
+    print(f'Epoch: {epoch}, Average Training Loss: {avg_train_loss}')
 
-model.eval()
-preds = []
-true_labels = []
+    # Evaluate the model on the test set after each epoch
+    model.eval()
+    preds = []
+    true_labels = []
 
-with torch.no_grad():
-    for batch in test_loader:
-        inputs = {key: val.to(device) for key, val in batch.items() if key != 'labels'}
-        labels = batch['labels'].to(device)
+    with torch.no_grad():
+        for batch in test_loader:
+            inputs = {key: val.to(device) for key, val in batch.items() if key != 'labels'}
+            labels = batch['labels'].to(device)
 
-        outputs = model(**inputs)
-        _, predicted = torch.max(outputs.logits, 1)
+            outputs = model(**inputs)
+            _, predicted = torch.max(outputs.logits, 1)
 
-        preds.extend(predicted.cpu().numpy())
-        true_labels.extend(labels.cpu().numpy())
+            preds.extend(predicted.cpu().numpy())
+            true_labels.extend(labels.cpu().numpy())
 
-accuracy = accuracy_score(true_labels, preds)
-print(f'Test Accuracy: {accuracy}')
-
-report = classification_report(true_labels, preds, target_names=["No mastitis (Control)", "Mastitis Present (Case)"])
-print(report)
+    accuracy = accuracy_score(true_labels, preds)
+    print(f'Epoch: {epoch}, Test Accuracy: {accuracy}')
+    report = classification_report(true_labels, preds, target_names=["No mastitis (Control)", "Mastitis Present (Case)"])
+    print(report)
 
 # Confusion matrix
 from sklearn.metrics import confusion_matrix
-
 conf_matrix = confusion_matrix(true_labels, preds)
 print(conf_matrix)
