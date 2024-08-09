@@ -29,8 +29,9 @@ def bit_reader(input_file, chunk_size=1024):
 
     try:
         file_size = os.path.getsize(input_file)
-        with open(input_file, 'rb') as file, tqdm(total=file_size, unit='B', unit_scale=True,
-                                                  desc="Reading bits") as pbar:
+        with open(input_file, "rb") as file, tqdm(
+            total=file_size, unit="B", unit_scale=True, desc="Reading bits"
+        ) as pbar:
             while True:
                 # Read a chunk of data from the binary file
                 chunk = file.read(chunk_size)

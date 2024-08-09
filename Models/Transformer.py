@@ -2,9 +2,9 @@ import random
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers import BertTokenizer, BertForSequenceClassification, get_linear_schedule_with_warmup
+from transformers import BertTokenizer, get_linear_schedule_with_warmup
 from sklearn.model_selection import train_test_split
-from to_array import bit_reader
+from DataQuality.to_array import bit_reader
 from transformers import BertForSequenceClassification, AdamW
 from sklearn.metrics import accuracy_score, classification_report
 
@@ -12,7 +12,7 @@ from sklearn.metrics import accuracy_score, classification_report
 def read_numbers_from_file2(file_path):
     numbers = []
     try:
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             for line in file:
                 row = list(map(int, line.strip().split()))
                 numbers.append(row)
@@ -22,10 +22,11 @@ def read_numbers_from_file2(file_path):
         print(f"An error occurred: {e}")
     return np.array(numbers)
 
+
 def read_numbers_from_file(file_path):
     numbers = []
     try:
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             for line in file:
                 numbers.append(int(line.strip()))
     except FileNotFoundError:
@@ -34,20 +35,32 @@ def read_numbers_from_file(file_path):
         print(f"An error occurred: {e}")
     return numbers
 
-herd = read_numbers_from_file2('breed_herdxyear_lact1_sorted.txt')
+
+herd = read_numbers_from_file2("breed_herdxyear_lact1_sorted.txt")
 
 X = bit_reader("output_hd_exclude_4000top_SNPs_binary.txt")
-y = read_numbers_from_file('mast_lact1_sorted_herd.txt')
+y = read_numbers_from_file("../Data/mast_lact1_sorted_herd.txt")
 
 for rowX, rowH in zip(X, herd):
     for value in rowH:
         rowX.append(value)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
 
 del X, y
 
-def duplicate_and_insert(original_list, target_list, original_target_labels, target_labels, label_value, num_duplicates, seed=None):
+
+def duplicate_and_insert(
+    original_list,
+    target_list,
+    original_target_labels,
+    target_labels,
+    label_value,
+    num_duplicates,
+    seed=None,
+):
     random.seed(seed)
     for d in range(len(original_list)):
         if original_target_labels[d] == label_value:
@@ -56,17 +69,23 @@ def duplicate_and_insert(original_list, target_list, original_target_labels, tar
                 target_list.insert(random_position, original_list[d].copy())
                 target_labels.insert(random_position, label_value)
 
+
 seed_value = 42
 
 X_train_augmented = X_train.copy()
 y_train_augmented = y_train.copy()
-duplicate_and_insert(X_train, X_train_augmented, y_train, y_train_augmented, 1, 16, seed=seed_value)
+duplicate_and_insert(
+    X_train, X_train_augmented, y_train, y_train_augmented, 1, 16, seed=seed_value
+)
 
 X_test_augmented = X_test.copy()
 y_test_augmented = y_test.copy()
-duplicate_and_insert(X_test, X_test_augmented, y_test, y_test_augmented, 1, 16, seed=seed_value)
+duplicate_and_insert(
+    X_test, X_test_augmented, y_test, y_test_augmented, 1, 16, seed=seed_value
+)
 
 del X_train, y_train
+
 
 # Prepare the data for the transformer model
 class GeneticDataset(Dataset):
@@ -82,12 +101,19 @@ class GeneticDataset(Dataset):
     def __getitem__(self, idx):
         sequence = " ".join(map(str, self.sequences[idx]))
         label = self.labels[idx]
-        encoding = self.tokenizer(sequence, truncation=True, padding='max_length', max_length=self.max_length, return_tensors='pt')
+        encoding = self.tokenizer(
+            sequence,
+            truncation=True,
+            padding="max_length",
+            max_length=self.max_length,
+            return_tensors="pt",
+        )
         item = {key: val.squeeze() for key, val in encoding.items()}
-        item['labels'] = torch.tensor(label)
+        item["labels"] = torch.tensor(label)
         return item
 
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
 train_dataset = GeneticDataset(X_train_augmented, y_train_augmented, tokenizer)
 test_dataset = GeneticDataset(X_test_augmented, y_test_augmented, tokenizer)
@@ -99,7 +125,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 # Load the BERT model
-model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=2)
+model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2)
 model.to(device)
 
 # Define the optimizer
@@ -107,7 +133,9 @@ optimizer = AdamW(model.parameters(), lr=2e-5)
 
 # Learning rate scheduler
 total_steps = len(train_loader) * 3  # Assuming 3 epochs
-scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
+scheduler = get_linear_schedule_with_warmup(
+    optimizer, num_warmup_steps=0, num_training_steps=total_steps
+)
 
 # Loss function
 loss_fn = torch.nn.CrossEntropyLoss()
@@ -118,8 +146,8 @@ for epoch in range(3):  # Number of epochs
     i = 0
     for batch in train_loader:
         optimizer.zero_grad()
-        inputs = {key: val.to(device) for key, val in batch.items() if key != 'labels'}
-        labels = batch['labels'].to(device)
+        inputs = {key: val.to(device) for key, val in batch.items() if key != "labels"}
+        labels = batch["labels"].to(device)
 
         outputs = model(**inputs)
         loss = loss_fn(outputs.logits, labels)
@@ -128,10 +156,12 @@ for epoch in range(3):  # Number of epochs
         optimizer.step()
         scheduler.step()
         i += 1
-        print(f'Epoch: {epoch}, Loop {i} of {len(train_loader)}, Loss: {loss.item()}, Learning Rate: {optimizer.param_groups[0]["lr"]}')
+        print(
+            f'Epoch: {epoch}, Loop {i} of {len(train_loader)}, Loss: {loss.item()}, Learning Rate: {optimizer.param_groups[0]["lr"]}'
+        )
 
     avg_train_loss = total_loss / len(train_loader)
-    print(f'Epoch: {epoch}, Average Training Loss: {avg_train_loss}')
+    print(f"Epoch: {epoch}, Average Training Loss: {avg_train_loss}")
 
     # Evaluate the model on the test set after each epoch
     model.eval()
@@ -140,8 +170,10 @@ for epoch in range(3):  # Number of epochs
 
     with torch.no_grad():
         for batch in test_loader:
-            inputs = {key: val.to(device) for key, val in batch.items() if key != 'labels'}
-            labels = batch['labels'].to(device)
+            inputs = {
+                key: val.to(device) for key, val in batch.items() if key != "labels"
+            }
+            labels = batch["labels"].to(device)
 
             outputs = model(**inputs)
             _, predicted = torch.max(outputs.logits, 1)
@@ -150,11 +182,16 @@ for epoch in range(3):  # Number of epochs
             true_labels.extend(labels.cpu().numpy())
 
     accuracy = accuracy_score(true_labels, preds)
-    print(f'Epoch: {epoch}, Test Accuracy: {accuracy}')
-    report = classification_report(true_labels, preds, target_names=["No mastitis (Control)", "Mastitis Present (Case)"])
+    print(f"Epoch: {epoch}, Test Accuracy: {accuracy}")
+    report = classification_report(
+        true_labels,
+        preds,
+        target_names=["No mastitis (Control)", "Mastitis Present (Case)"],
+    )
     print(report)
 
 # Confusion matrix
 from sklearn.metrics import confusion_matrix
+
 conf_matrix = confusion_matrix(true_labels, preds)
 print(conf_matrix)
