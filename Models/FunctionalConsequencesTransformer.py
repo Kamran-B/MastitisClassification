@@ -16,9 +16,9 @@ from DataQuality.funtional_consequences import *
 
 # Load data from files
 
-herd = load_2d_array_from_file("Data/breed_herdxyear_lact1_sorted.txt")
-X = bit_reader("Data/output_hd_exclude_4000top_SNPs_binary.txt")
-y = load_1d_array_from_file("Data/mast_lact1_sorted_herd.txt")
+herd = load_2d_array_from_file("../Data/breed_herdxyear_lact1_sorted.txt")
+X = bit_reader("../Data/output_hd_exclude_4000top_SNPs_binary.txt")
+y = load_1d_array_from_file("../Data/mast_lact1_sorted_herd.txt")
 
 # Start time
 start_time = time.time()

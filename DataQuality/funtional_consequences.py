@@ -141,8 +141,8 @@ def left_join(left_df, right_df, join_col, fill_col, default_value=0):
 
 
 def get_impact_scores():
-    snp_names = extract_columns("Data/FunctionalConsequences/top4000SNPS.txt", ["SNP_name0"], "|")
-    impact_scores = extract_columns("Data/FunctionalConsequences/4000_top_SNP_functional_consequences_impact_score_1.csv",
+    snp_names = extract_columns("../Data/FunctionalConsequences/top4000SNPS.txt", ["SNP_name0"], "|")
+    impact_scores = extract_columns("../Data/FunctionalConsequences/4000_top_SNP_functional_consequences_impact_score_1.csv",
                                     ['SNP_name0', 'impact_score'], "|")
     combined = left_join(snp_names, impact_scores, "SNP_name0", "impact_score", 0.1)
     return combined
