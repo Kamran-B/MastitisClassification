@@ -1,5 +1,5 @@
-import random
-import numpy as np
+import json
+import os
 import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import BertTokenizer, get_linear_schedule_with_warmup
@@ -8,82 +8,88 @@ from DataQuality.to_array import bit_reader
 from transformers import BertForSequenceClassification, AdamW
 from sklearn.metrics import accuracy_score, classification_report
 
-
-def read_numbers_from_file2(file_path):
-    numbers = []
-    try:
-        with open(file_path, "r") as file:
-            for line in file:
-                row = list(map(int, line.strip().split()))
-                numbers.append(row)
-    except FileNotFoundError:
-        print(f"File not found: {file_path}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    return np.array(numbers)
+from DataQuality.funtional_consequences import *
 
 
-def read_numbers_from_file(file_path):
-    numbers = []
-    try:
-        with open(file_path, "r") as file:
-            for line in file:
-                numbers.append(int(line.strip()))
-    except FileNotFoundError:
-        print(f"File not found: {file_path}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    return numbers
+TOP_PERFORMANCE_FILE = "top_performances.json"
+TOP_K = 10
+MODEL_SAVE_PATH = "./saved_models"
+
+# Create directory for saving models if it doesn't exist
+if not os.path.exists(MODEL_SAVE_PATH):
+    os.makedirs(MODEL_SAVE_PATH)
+
+# Load the top 10 performances from file or initialize an empty list
+def load_top_performances():
+    if os.path.exists(TOP_PERFORMANCE_FILE):
+        with open(TOP_PERFORMANCE_FILE, 'r') as f:
+            return json.load(f)
+    return []
+
+# Save the top 10 performances back to file
+def save_top_performances(top_performances):
+    with open(TOP_PERFORMANCE_FILE, 'w') as f:
+        json.dump(top_performances, f, indent=4)
+
+# Update the top 10 list if the current accuracy is better than the worst in the list
+def update_top_performances(top_performances, accuracy, model_name):
+    if len(top_performances) < TOP_K or accuracy > min([p["accuracy"] for p in top_performances]):
+        # Add the new performance and sort the list
+        top_performances.append({"accuracy": accuracy, "model_name": model_name})
+        top_performances = sorted(top_performances, key=lambda x: x["accuracy"], reverse=True)
+        # Keep only the top 10
+        if len(top_performances) > TOP_K:
+            # Remove the worst performance and delete the associated model file
+            worst_performance = top_performances.pop()
+            model_to_delete = os.path.join(MODEL_SAVE_PATH, worst_performance["model_name"])
+            if os.path.exists(model_to_delete):
+                os.remove(model_to_delete)
+        # Save updated list
+        save_top_performances(top_performances)
+    else:
+        # If not top 10, delete the current model
+        model_to_delete = os.path.join(MODEL_SAVE_PATH, model_name)
+        if os.path.exists(model_to_delete):
+            os.remove(model_to_delete)
 
 
-herd = read_numbers_from_file2("breed_herdxyear_lact1_sorted.txt")
+# Load data from files
 
-X = bit_reader("output_hd_exclude_4000top_SNPs_binary.txt")
-y = read_numbers_from_file("../Data/mast_lact1_sorted_herd.txt")
+herd = load_2d_array_from_file("../Data/breed_herdxyear_lact1_sorted.txt")
+X = bit_reader("../Data/output_hd_exclude_4000top_SNPs_binary.txt")
+y = load_1d_array_from_file("../Data/mast_lact1_sorted_herd.txt")
 
+
+# Combine herd data with X
 for rowX, rowH in zip(X, herd):
     for value in rowH:
         rowX.append(value)
 
+# Split data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
+# Clean up original data
 del X, y
-
-
-def duplicate_and_insert(
-    original_list,
-    target_list,
-    original_target_labels,
-    target_labels,
-    label_value,
-    num_duplicates,
-    seed=None,
-):
-    random.seed(seed)
-    for d in range(len(original_list)):
-        if original_target_labels[d] == label_value:
-            for j in range(num_duplicates):
-                random_position = random.randint(0, len(target_list))
-                target_list.insert(random_position, original_list[d].copy())
-                target_labels.insert(random_position, label_value)
-
 
 seed_value = 42
 
+# Augment training data
 X_train_augmented = X_train.copy()
 y_train_augmented = y_train.copy()
 duplicate_and_insert(
     X_train, X_train_augmented, y_train, y_train_augmented, 1, 16, seed=seed_value
 )
 
+# Augment testing data
 X_test_augmented = X_test.copy()
 y_test_augmented = y_test.copy()
 duplicate_and_insert(
     X_test, X_test_augmented, y_test, y_test_augmented, 1, 16, seed=seed_value
 )
 
+# Clean up training data
 del X_train, y_train
 
 
@@ -112,8 +118,7 @@ class GeneticDataset(Dataset):
         item["labels"] = torch.tensor(label)
         return item
 
-
-tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+tokenizer = BertTokenizer.from_pretrained("bert-large-uncased")
 
 train_dataset = GeneticDataset(X_train_augmented, y_train_augmented, tokenizer)
 test_dataset = GeneticDataset(X_test_augmented, y_test_augmented, tokenizer)
@@ -125,7 +130,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 # Load the BERT model
-model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2)
+model = BertForSequenceClassification.from_pretrained("bert-large-uncased", num_labels=2)
 model.to(device)
 
 # Define the optimizer
