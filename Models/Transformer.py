@@ -194,6 +194,12 @@ for epoch in range(3):  # Number of epochs
         target_names=["No mastitis (Control)", "Mastitis Present (Case)"],
     )
     print(report)
+    model_name = f"model_epoch{epoch}_acc{accuracy:.4f}.pt"
+    torch.save(model.state_dict(), os.path.join(MODEL_SAVE_PATH, model_name))
+
+    # Load current top performances and update
+    top_performances = load_top_performances()
+    update_top_performances(top_performances, accuracy, model_name)
 
 # Confusion matrix
 from sklearn.metrics import confusion_matrix
