@@ -148,22 +148,22 @@ def get_common_cows():
     return read_and_intersect(output_hd_exclude, mast_lact1)
 
 
-# Filters mast_lact_1 by common cows, sorts by cow ID, removes cow ID
+# Filters phenotypes by common cows, sorts by cow ID, removes cow ID
 def clean_mastlact1():
     # Mast Lact1 versions
-    mast_lact1 = "mast_lact1.phen"
-    mast_lact1_temp = "mast_lact1_temp.txt"
-    mast_lact1_sorted = "mast_lact1_sorted_herd.txt"
+    phenotypes = "phenotypes.phen"
+    phenotypes_temp = "phenotypes_temp.txt"
+    phenotypes_sorted = "phenotypes_sorted_herd.txt"
 
     common_cows = get_common_cows()
 
-    print("filtering and sorting mast_lact1")
-    filter_and_copy(mast_lact1, common_cows, mast_lact1_temp)
-    sort_file_by_first_column(mast_lact1_temp)
-    remove_first_n_values(mast_lact1_temp, mast_lact1_sorted, 2)
+    print("filtering and sorting phenotypes")
+    filter_and_copy(phenotypes, common_cows, phenotypes_temp)
+    sort_file_by_first_column(phenotypes_temp)
+    remove_first_n_values(phenotypes_temp, phenotypes_sorted, 2)
 
     # delete temp file
-    delete_file(mast_lact1_temp)
+    delete_file(phenotypes_temp)
 
 
 # Filters herdxyear by common cows, sorts by cow ID, removes cow ID
@@ -187,24 +187,24 @@ def clean_heardxyear():
 # Converts SNPs from raw_data to binary format
 def clean_raw_data():
     # All SNPS versions:
-    output_hd_exclude = "output_hd_exclude.raw"
-    output_hd_exclude_cleaned = "output_hd_exclude_cleaned.txt"
+    raw_data_exclude = "raw_data.raw"
+    raw_data_cleaned = "raw_data_cleaned.txt"
     output_hd_exclude_binary = "output_hd_exclude_binary_herd.txt"
 
     common_cows = get_common_cows()
 
-    # filter and sort output_hd_exclude
-    print("filtering and sorting output_hd_exclude")
-    filter_and_copy(output_hd_exclude, common_cows, output_hd_exclude_binary)
+    # filter and sort raw_data
+    print("filtering and sorting raw_data_exclude")
+    filter_and_copy(raw_data_exclude, common_cows, output_hd_exclude_binary)
     sort_file_by_first_column(output_hd_exclude_binary)
 
-    # remove first 6 cols from output_hd_exclude
-    print("removing first 6 columns from output_hd_exclude")
-    remove_first_n_values(output_hd_exclude_binary, output_hd_exclude_cleaned, 6)
+    # remove first 6 cols from raw_data
+    print("removing first 6 columns from raw_data_exclude")
+    remove_first_n_values(output_hd_exclude_binary, raw_data_cleaned, 6)
 
-    # compress output_hd_exclude to binary
-    print("compressing output_hd_exclude to binary")
-    to_binary(output_hd_exclude_cleaned, output_hd_exclude_binary)
+    # compress raw_data to binary
+    print("compressing raw_data_exclude to binary")
+    to_binary(raw_data_cleaned, output_hd_exclude_binary)
 
 
 # Gets binary file of top 200+ SNPs (w +/- 50 on either side)
@@ -213,16 +213,16 @@ def get_top_200_SNPs_expanded():
     top_200_SNPs_expanded = "top_200_SNPs_expanded.txt"
     top_200_SNPs_expanded_binary = "top_200_SNPs_expanded_binary.txt"
     top_200_SNPs_indices = "top_200_SNPs_indices.txt"
-    output_hd_exclude_cleaned = "output_hd_exclude_cleaned.raw"
+    raw_data_cleaned = "raw_data_cleaned.raw"
 
     # Load important SNP indices
     important_SNPs_indices = load_1d_array_from_file(top_200_SNPs_indices)
     important_SNPs_expanded = expand_list_with_range(important_SNPs_indices, offset=50)
 
-    # filter output_hd_exclude by significant SNPs
-    print("filtering output_hd_exclude by significant SNPs")
+    # filter raw_data by significant SNPs
+    print("filtering raw_data by significant SNPs")
     extract_specified_columns(
-        output_hd_exclude_cleaned, top_200_SNPs_expanded, important_SNPs_expanded
+        raw_data_cleaned, top_200_SNPs_expanded, important_SNPs_expanded
     )
 
     # compress top_snps to binary
