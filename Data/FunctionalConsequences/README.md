@@ -1,4 +1,4 @@
-This folder is used for data and files related to Functional Consequences.
+This folder is used for data related to Functional Consequences.
 
 It should contain:
 
