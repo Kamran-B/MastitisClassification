@@ -55,9 +55,9 @@ def update_top_performances(top_performances, accuracy, model_name):
 
 # Load data from files
 
-herd = load_2d_array_from_file("../Data/breed_herdxyear_lact1_sorted.txt")
-X = bit_reader("../Data/output_hd_exclude_4000top_SNPs_binary.txt")
-y = load_1d_array_from_file("../Data/mast_lact1_sorted_herd.txt")
+herd = load_2d_array_from_file("../Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt")
+X = bit_reader("../Data/TopSNPs/top_4000_SNPs_binary.txt")
+y = load_1d_array_from_file("../Data/Phenotypes/phenotypes_sorted_herd.txt")
 
 
 # Combine herd data with X
