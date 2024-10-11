@@ -14,26 +14,22 @@ from sklearn.metrics import accuracy_score, classification_report
 
 from DataQuality.funtional_consequences import *
 
+# Create variables
+breed_herd_year = '../Data/breed_herdxyear_lact1_sorted.txt'
+top_4000_snps_binary = '../Data/output_hd_exclude_4000top_SNPs_binary.txt'
+top_200_snps_expanded_binary = '../Data/TopSNPs/top_200_snps_expanded_binary.txt'
+phenotypes = '../Data/mast_lact1_sorted_herd.txt'
+impact_scores = np.array(get_impact_scores()['impact_score'])
 
 # Load data from files
+herd = load_2d_array_from_file(breed_herd_year)
+X = bit_reader(top_200_snps_expanded_binary)
+y = load_1d_array_from_file(phenotypes)
 
-herd = load_2d_array_from_file("../Data/breed_herdxyear_lact1_sorted.txt")
-X = bit_reader("../Data/output_hd_exclude_4000top_SNPs_binary.txt")
-y = load_1d_array_from_file("../Data/mast_lact1_sorted_herd.txt")
-
-# Start time
-start_time = time.time()
-
-X = np.array(X)
-impact_scores = np.array(get_impact_scores()['impact_score'])
-X = 1 + X * impact_scores
-X = X.tolist()
-# End time
-end_time = time.time()
-
-# Elapsed time in seconds
-elapsed_time = end_time - start_time
-print(f"Elapsed time: {elapsed_time:.6f} seconds")
+# Add functional consequences
+# X = np.array(X)
+# X = 1 + X * impact_scores
+# X = X.tolist()
 
 # Combine herd data with X
 for rowX, rowH in zip(X, herd):
