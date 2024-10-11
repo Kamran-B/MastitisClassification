@@ -60,9 +60,9 @@ def removeOnes(x_train, y_train):
 print(1)
 # X = bit_reader("output_hd_exclude_binary_herd.txt")
 # y = read_numbers_from_file('mast_lact1_sorted_herd.txt')
-# X = bit_reader("output_hd_exclude_top_SNPs_binary.txt")
+# X = bit_reader("top_200_SNPs_binary.txt")
 X = bit_reader("../Data/output_hd_exclude_binary_herd.txt")
-y = read_numbers_from_file("../Data/mast_lact1_sorted_herd.txt")
+y = read_numbers_from_file("../Data/Phenotypes/mast_lact1_sorted_herd.txt")
 
 # Split the dataset into training and testing sets
 X_train, X_test, y_train, y_test = preprocess_data_with_pca(
