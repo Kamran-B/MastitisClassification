@@ -38,7 +38,7 @@ def read_numbers_from_file(file_path):
 herd = read_numbers_from_file2("breed_herdxyear_lact1_sorted.txt")
 
 X = bit_reader("output_hd_exclude_4000top_SNPs_binary.txt")
-y = read_numbers_from_file("../Data/mast_lact1_sorted_herd.txt")
+y = read_numbers_from_file("../Data/Phenotypes/mast_lact1_sorted_herd.txt")
 
 for rowX, rowH in zip(X, herd):
     for value in rowH:

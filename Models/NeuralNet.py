@@ -61,8 +61,8 @@ def read_numbers_from_file(file_path):
     return numbers
 
 
-X = bit_reader("../Data/output_hd_exclude_top_SNPs_binary.txt")
-y = read_numbers_from_file("../Data/mast_lact1_sorted.txt")
+X = bit_reader("../Data/TopSNPs/top_200_SNPs_binary.txt")
+y = read_numbers_from_file("../Data/Phenotypes/mast_lact1_sorted.txt")
 
 # Split the dataset into training and testing sets
 X_train, X_test, y_train, y_test = preprocess_data_with_pca(

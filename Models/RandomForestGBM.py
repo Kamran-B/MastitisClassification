@@ -25,7 +25,7 @@ def read_numbers_from_file(file_path):
 
 
 X = bit_reader("../Data/output_hd_exclude_binary_herd.txt")
-y = read_numbers_from_file("../Data/mast_lact1_sorted_herd.txt")
+y = read_numbers_from_file("../Data/Phenotypes/mast_lact1_sorted_herd.txt")
 
 # Split the dataset into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(
