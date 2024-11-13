@@ -2,226 +2,241 @@ import json
 import os
 import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers import BertTokenizer, get_linear_schedule_with_warmup
+from transformers import BertTokenizer
 from sklearn.model_selection import train_test_split
 from DataQuality.to_array import bit_reader
-from transformers import BertForSequenceClassification, AdamW
-from sklearn.metrics import accuracy_score, classification_report
-
+from transformers import BertForSequenceClassification
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from DataQuality.funtional_consequences import *
+import warnings
+warnings.filterwarnings("ignore")
 
 
 TOP_PERFORMANCE_FILE = "top_performances.json"
 TOP_K = 10
-MODEL_SAVE_PATH = "./saved_models"
+MODEL_SAVE_PATH = "../Data/Saved Models/saved_models"
 
-# Create directory for saving models if it doesn't exist
-if not os.path.exists(MODEL_SAVE_PATH):
-    os.makedirs(MODEL_SAVE_PATH)
+def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
+    torch.cuda.manual_seed(seed_value)
 
-# Load the top 10 performances from file or initialize an empty list
-def load_top_performances():
-    if os.path.exists(TOP_PERFORMANCE_FILE):
-        with open(TOP_PERFORMANCE_FILE, 'r') as f:
-            return json.load(f)
-    return []
+    torch.manual_seed(seed_value)
+    np.random.seed(seed_value)
+    random.seed(seed_value)
 
-# Save the top 10 performances back to file
-def save_top_performances(top_performances):
-    with open(TOP_PERFORMANCE_FILE, 'w') as f:
-        json.dump(top_performances, f, indent=4)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
-# Update the top 10 list if the current accuracy is better than the worst in the list
-def update_top_performances(top_performances, accuracy, model_name):
-    if len(top_performances) < TOP_K or accuracy > min([p["accuracy"] for p in top_performances]):
-        # Add the new performance and sort the list
-        top_performances.append({"accuracy": accuracy, "model_name": model_name})
-        top_performances = sorted(top_performances, key=lambda x: x["accuracy"], reverse=True)
-        # Keep only the top 10
-        if len(top_performances) > TOP_K:
-            # Remove the worst performance and delete the associated model file
-            worst_performance = top_performances.pop()
-            model_to_delete = os.path.join(MODEL_SAVE_PATH, worst_performance["model_name"])
+    # Create directory for saving models if it doesn't exist
+    if not os.path.exists(MODEL_SAVE_PATH):
+        os.makedirs(MODEL_SAVE_PATH)
+
+    # Load the top 10 performances from file or initialize an empty list
+    def load_top_performances():
+        if os.path.exists(TOP_PERFORMANCE_FILE):
+            with open(TOP_PERFORMANCE_FILE, 'r') as f:
+                return json.load(f)
+        return []
+
+    # Save the top 10 performances back to file
+    def save_top_performances(top_performances):
+        with open(TOP_PERFORMANCE_FILE, 'w') as f:
+            json.dump(top_performances, f, indent=4)
+
+    # Update the top 10 list if the current accuracy is better than the worst in the list
+    def update_top_performances(top_performances, accuracy, model_name):
+        if len(top_performances) < TOP_K or accuracy > min([p["accuracy"] for p in top_performances]):
+            # Add the new performance and sort the list
+            top_performances.append({"accuracy": accuracy, "model_name": model_name})
+            top_performances = sorted(top_performances, key=lambda x: x["accuracy"], reverse=True)
+            # Keep only the top 10
+            if len(top_performances) > TOP_K:
+                # Remove the worst performance and delete the associated model file
+                worst_performance = top_performances.pop()
+                model_to_delete = os.path.join(MODEL_SAVE_PATH, worst_performance["model_name"])
+                if os.path.exists(model_to_delete):
+                    os.remove(model_to_delete)
+            # Save updated list
+            save_top_performances(top_performances)
+        else:
+            # If not top 10, delete the current model
+            model_to_delete = os.path.join(MODEL_SAVE_PATH, model_name)
             if os.path.exists(model_to_delete):
                 os.remove(model_to_delete)
-        # Save updated list
-        save_top_performances(top_performances)
-    else:
-        # If not top 10, delete the current model
-        model_to_delete = os.path.join(MODEL_SAVE_PATH, model_name)
-        if os.path.exists(model_to_delete):
-            os.remove(model_to_delete)
 
 
-# Load data from files
+    # Load data from files
 
-herd = load_2d_array_from_file("../Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt")
-X = bit_reader("../Data/TopSNPs/top_4000_SNPs_binary.txt")
-y = load_1d_array_from_file("../Data/Phenotypes/phenotypes_sorted_herd.txt")
-
-
-# Combine herd data with X
-for rowX, rowH in zip(X, herd):
-    for value in rowH:
-        rowX.append(value)
-
-# Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
-
-# Clean up original data
-del X, y
+    herd = load_2d_array_from_file("../Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt")
+    X = bit_reader("../Data/TopSNPs/top_4000_SNPs_binary.txt")
+    y = load_1d_array_from_file("../Data/Phenotypes/phenotypes_sorted_herd.txt")
 
 
-def duplicate_and_insert(
-    original_list,
-    target_list,
-    original_target_labels,
-    target_labels,
-    label_value,
-    num_duplicates,
-    seed=None,
-):
-    random.seed(seed)
-    for d in range(len(original_list)):
-        if original_target_labels[d] == label_value:
-            for j in range(num_duplicates):
-                random_position = random.randint(0, len(target_list))
-                target_list.insert(random_position, original_list[d].copy())
-                target_labels.insert(random_position, label_value)
+    # Combine herd data with X
+    for rowX, rowH in zip(X, herd):
+        for value in rowH:
+            rowX.append(value)
+
+    # Split data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
 
 
-seed_value = 42
-
-# Augment training data
-X_train_augmented = X_train.copy()
-y_train_augmented = y_train.copy()
-duplicate_and_insert(
-    X_train, X_train_augmented, y_train, y_train_augmented, 1, 16, seed=seed_value
-)
-
-# Augment testing data
-X_test_augmented = X_test.copy()
-y_test_augmented = y_test.copy()
-duplicate_and_insert(
-    X_test, X_test_augmented, y_test, y_test_augmented, 1, 16, seed=seed_value
-)
-
-# Clean up training data
-del X_train, y_train
+    def duplicate_and_insert(
+        original_list,
+        target_list,
+        original_target_labels,
+        target_labels,
+        label_value,
+        num_duplicates,
+        seed=None,
+    ):
+        random.seed(seed)
+        for d in range(len(original_list)):
+            if original_target_labels[d] == label_value:
+                for j in range(num_duplicates):
+                    random_position = random.randint(0, len(target_list))
+                    target_list.insert(random_position, original_list[d].copy())
+                    target_labels.insert(random_position, label_value)
 
 
-# Prepare the data for the transformer model
-class GeneticDataset(Dataset):
-    def __init__(self, sequences, labels, tokenizer, max_length=512):
-        self.sequences = sequences
-        self.labels = labels
-        self.tokenizer = tokenizer
-        self.max_length = max_length
+    # Augment training data
+    X_train_augmented = X_train.copy()
+    y_train_augmented = y_train.copy()
+    duplicate_and_insert(
+        X_train, X_train_augmented, y_train, y_train_augmented, 1, 16, seed=seed_value
+    )
 
-    def __len__(self):
-        return len(self.sequences)
+    # Augment testing data
+    X_test_augmented = X_test.copy()
+    y_test_augmented = y_test.copy()
+    duplicate_and_insert(
+        X_test, X_test_augmented, y_test, y_test_augmented, 1, 16, seed=seed_value
+    )
 
-    def __getitem__(self, idx):
-        sequence = " ".join(map(str, self.sequences[idx]))
-        label = self.labels[idx]
-        encoding = self.tokenizer(
-            sequence,
-            truncation=True,
-            padding="max_length",
-            max_length=self.max_length,
-            return_tensors="pt",
-        )
-        item = {key: val.squeeze() for key, val in encoding.items()}
-        item["labels"] = torch.tensor(label)
-        return item
+    # Clean up training data
+    del X_train, y_train
 
-tokenizer = BertTokenizer.from_pretrained("bert-large-uncased")
 
-train_dataset = GeneticDataset(X_train_augmented, y_train_augmented, tokenizer)
-test_dataset = GeneticDataset(X_test_augmented, y_test_augmented, tokenizer)
+    # Prepare the data for the transformer model
+    class GeneticDataset(Dataset):
+        def __init__(self, sequences, labels, tokenizer, max_length=512):
+            self.sequences = sequences
+            self.labels = labels
+            self.tokenizer = tokenizer
+            self.max_length = max_length
 
-train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
+        def __len__(self):
+            return len(self.sequences)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")
+        def __getitem__(self, idx):
+            sequence = " ".join(map(str, self.sequences[idx]))
+            label = self.labels[idx]
+            encoding = self.tokenizer(
+                sequence,
+                truncation=True,
+                padding="max_length",
+                max_length=self.max_length,
+                return_tensors="pt",
+            )
+            item = {key: val.squeeze() for key, val in encoding.items()}
+            item["labels"] = torch.tensor(label)
+            return item
 
-# Load the BERT model
-model = BertForSequenceClassification.from_pretrained("bert-large-uncased", num_labels=2)
-model.to(device)
+    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
-# Define the optimizer
-optimizer = AdamW(model.parameters(), lr=2e-5)
+    train_dataset = GeneticDataset(X_train_augmented, y_train_augmented, tokenizer)
+    test_dataset = GeneticDataset(X_test_augmented, y_test_augmented, tokenizer)
 
-# Learning rate scheduler
-total_steps = len(train_loader) * 3  # Assuming 3 epochs
-scheduler = get_linear_schedule_with_warmup(
-    optimizer, num_warmup_steps=0, num_training_steps=total_steps
-)
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
-# Loss function
-loss_fn = torch.nn.CrossEntropyLoss()
-# Training loop with learning rate scheduling and evaluation at each epoch
-for epoch in range(3):  # Number of epochs
-    model.train()
-    total_loss = 0
-    i = 0
-    for batch in train_loader:
-        optimizer.zero_grad()
-        inputs = {key: val.to(device) for key, val in batch.items() if key != "labels"}
-        labels = batch["labels"].to(device)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
 
-        outputs = model(**inputs)
-        loss = loss_fn(outputs.logits, labels)
-        total_loss += loss.item()
-        loss.backward()
-        optimizer.step()
-        scheduler.step()
-        i += 1
-        print(
-            f'Epoch: {epoch}, Loop {i} of {len(train_loader)}, Loss: {loss.item()}, Learning Rate: {optimizer.param_groups[0]["lr"]}'
-        )
+    # Load the BERT model
+    model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2)
+    model.to(device)
 
-    avg_train_loss = total_loss / len(train_loader)
-    print(f"Epoch: {epoch}, Average Training Loss: {avg_train_loss}")
+    # Define the optimizer
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5)
 
-    # Evaluate the model on the test set after each epoch
-    model.eval()
-    preds = []
-    true_labels = []
+    '''# Learning rate scheduler
+    total_steps = len(train_loader) * epochs  # Assuming 3 epochs
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer, num_warmup_steps=0, num_training_steps=total_steps
+    )'''
 
-    with torch.no_grad():
-        for batch in test_loader:
-            inputs = {
-                key: val.to(device) for key, val in batch.items() if key != "labels"
-            }
+    # Loss function
+    loss_fn = torch.nn.CrossEntropyLoss()
+    accuracies = []
+
+    # Training loop with learning rate scheduling and evaluation at each epoch
+    for epoch in range(epochs):  # Number of epochs
+        model.train()
+        total_loss = 0
+        i = 0
+        for batch in train_loader:
+            optimizer.zero_grad()
+            inputs = {key: val.to(device) for key, val in batch.items() if key != "labels"}
             labels = batch["labels"].to(device)
 
             outputs = model(**inputs)
-            _, predicted = torch.max(outputs.logits, 1)
+            loss = loss_fn(outputs.logits, labels)
+            total_loss += loss.item()
+            loss.backward()
+            optimizer.step()
+            #scheduler.step()
+            i += 1
+            if printStats:
+                print(
+                    f'Epoch: {epoch}, Loop {i} of {len(train_loader)}, Loss: {loss.item()}, Learning Rate: {optimizer.param_groups[0]["lr"]}'
+                )
 
-            preds.extend(predicted.cpu().numpy())
-            true_labels.extend(labels.cpu().numpy())
+        avg_train_loss = total_loss / len(train_loader)
+        if printStats:
+            print(f"Epoch: {epoch}, Average Training Loss: {avg_train_loss}")
 
-    accuracy = accuracy_score(true_labels, preds)
-    print(f"Epoch: {epoch}, Test Accuracy: {accuracy}")
-    report = classification_report(
-        true_labels,
-        preds,
-        target_names=["No mastitis (Control)", "Mastitis Present (Case)"],
-    )
-    print(report)
-    model_name = f"model_epoch{epoch}_acc{accuracy:.4f}.pt"
-    torch.save(model.state_dict(), os.path.join(MODEL_SAVE_PATH, model_name))
+        # Evaluate the model on the test set after each epoch
+        model.eval()
+        preds = []
+        true_labels = []
 
-    # Load current top performances and update
-    top_performances = load_top_performances()
-    update_top_performances(top_performances, accuracy, model_name)
+        with torch.no_grad():
+            for batch in test_loader:
+                inputs = {
+                    key: val.to(device) for key, val in batch.items() if key != "labels"
+                }
+                labels = batch["labels"].to(device)
 
-# Confusion matrix
-from sklearn.metrics import confusion_matrix
+                outputs = model(**inputs)
+                _, predicted = torch.max(outputs.logits, 1)
 
-conf_matrix = confusion_matrix(true_labels, preds)
-print(conf_matrix)
+                preds.extend(predicted.cpu().numpy())
+                true_labels.extend(labels.cpu().numpy())
+
+        accuracy = accuracy_score(true_labels, preds)
+        report = classification_report(
+            true_labels,
+            preds,
+            target_names=["No mastitis (Control)", "Mastitis Present (Case)"],
+        )
+        conf_matrix = confusion_matrix(true_labels, preds)
+
+        if printStats:
+            print(f"Epoch: {epoch}, Test Accuracy: {accuracy}")
+            print(report)
+            print(conf_matrix)
+
+        if savePerf:
+            model_name = f"model_epoch{epoch}_acc{accuracy:.4f}.pt"
+            torch.save(model.state_dict(), os.path.join(MODEL_SAVE_PATH, model_name))
+
+            # Load current top performances and update
+            top_performances = load_top_performances()
+            update_top_performances(top_performances, accuracy, model_name)
+        accuracies.append(accuracy)
+    return accuracies
+
+if __name__=="__main__":
+    main(42, 4, True, False)
