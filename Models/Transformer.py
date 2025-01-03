@@ -1,24 +1,21 @@
-import json
-import os
-import torch
+from torch.optim import AdamW
 from torch.utils.data import Dataset, DataLoader
-from transformers import BertTokenizer
+from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
-from DataQuality.to_array import bit_reader
-from transformers import BertForSequenceClassification
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import torch
+from torch import nn
+from transformers import BertModel, BertTokenizer
 from DataQuality.funtional_consequences import *
-import warnings
-warnings.filterwarnings("ignore")
+from DataQuality.to_array import bit_reader
+from DataQuality.model_saving import *
 
 
-TOP_PERFORMANCE_FILE = "top_performances.json"
+TOP_PERFORMANCE_FILE = "top_performancesFuncCons.json"
 TOP_K = 10
-MODEL_SAVE_PATH = "../Data/Saved Models/saved_models"
+MODEL_SAVE_PATH = "../Data/Saved Models/saved_modelsFuncCons"
 
 def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     torch.cuda.manual_seed(seed_value)
-
     torch.manual_seed(seed_value)
     np.random.seed(seed_value)
     random.seed(seed_value)
@@ -30,75 +27,26 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     if not os.path.exists(MODEL_SAVE_PATH):
         os.makedirs(MODEL_SAVE_PATH)
 
-    # Load the top 10 performances from file or initialize an empty list
-    def load_top_performances():
-        if os.path.exists(TOP_PERFORMANCE_FILE):
-            with open(TOP_PERFORMANCE_FILE, 'r') as f:
-                return json.load(f)
-        return []
-
-    # Save the top 10 performances back to file
-    def save_top_performances(top_performances):
-        with open(TOP_PERFORMANCE_FILE, 'w') as f:
-            json.dump(top_performances, f, indent=4)
-
-    # Update the top 10 list if the current accuracy is better than the worst in the list
-    def update_top_performances(top_performances, accuracy, model_name):
-        if len(top_performances) < TOP_K or accuracy > min([p["accuracy"] for p in top_performances]):
-            # Add the new performance and sort the list
-            top_performances.append({"accuracy": accuracy, "model_name": model_name})
-            top_performances = sorted(top_performances, key=lambda x: x["accuracy"], reverse=True)
-            # Keep only the top 10
-            if len(top_performances) > TOP_K:
-                # Remove the worst performance and delete the associated model file
-                worst_performance = top_performances.pop()
-                model_to_delete = os.path.join(MODEL_SAVE_PATH, worst_performance["model_name"])
-                if os.path.exists(model_to_delete):
-                    os.remove(model_to_delete)
-            # Save updated list
-            save_top_performances(top_performances)
-        else:
-            # If not top 10, delete the current model
-            model_to_delete = os.path.join(MODEL_SAVE_PATH, model_name)
-            if os.path.exists(model_to_delete):
-                os.remove(model_to_delete)
-
+    # Create variables
+    #breed_herd_year = '../Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
+    top_4000_snps_binary = '../Data/output_hd_exclude_binary_herd.txt'
+    phenotypes = '../Data/Phenotypes/phenotypes_sorted.txt'
 
     # Load data from files
-
-    herd = load_2d_array_from_file("../Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt")
-    X = bit_reader("../Data/TopSNPs/top_4000_SNPs_binary.txt")
-    y = load_1d_array_from_file("../Data/Phenotypes/phenotypes_sorted_herd.txt")
-
+    #herd = load_2d_array_from_file(breed_herd_year)
+    X = bit_reader(top_4000_snps_binary)
+    y = load_1d_array_from_file(phenotypes)
 
     # Combine herd data with X
-    for rowX, rowH in zip(X, herd):
-        for value in rowH:
-            rowX.append(value)
+    '''for rowX, rowH in zip(X, herd):
+        rowX.extend(rowH)'''
 
+    print(len(X))
+    print(len(y))
     # Split data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y, test_size=0.2, random_state=seed_value
     )
-
-
-    def duplicate_and_insert(
-        original_list,
-        target_list,
-        original_target_labels,
-        target_labels,
-        label_value,
-        num_duplicates,
-        seed=None,
-    ):
-        random.seed(seed)
-        for d in range(len(original_list)):
-            if original_target_labels[d] == label_value:
-                for j in range(num_duplicates):
-                    random_position = random.randint(0, len(target_list))
-                    target_list.insert(random_position, original_list[d].copy())
-                    target_labels.insert(random_position, label_value)
-
 
     # Augment training data
     X_train_augmented = X_train.copy()
@@ -114,52 +62,111 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
         X_test, X_test_augmented, y_test, y_test_augmented, 1, 16, seed=seed_value
     )
 
-    # Clean up training data
-    del X_train, y_train
-
-
-    # Prepare the data for the transformer model
-    class GeneticDataset(Dataset):
-        def __init__(self, sequences, labels, tokenizer, max_length=512):
-            self.sequences = sequences
-            self.labels = labels
-            self.tokenizer = tokenizer
-            self.max_length = max_length
-
-        def __len__(self):
-            return len(self.sequences)
-
-        def __getitem__(self, idx):
-            sequence = " ".join(map(str, self.sequences[idx]))
-            label = self.labels[idx]
-            encoding = self.tokenizer(
-                sequence,
-                truncation=True,
-                padding="max_length",
-                max_length=self.max_length,
-                return_tensors="pt",
-            )
-            item = {key: val.squeeze() for key, val in encoding.items()}
-            item["labels"] = torch.tensor(label)
-            return item
+    def tokenize_snps(snp_sequences, tokenizer, max_length=256):
+        tokenized_data = []
+        for snp_sequence in snp_sequences:
+            snp_chunks = [
+                tokenizer(" ".join(map(str, snp_sequence[i:i + max_length])),
+                          padding="max_length", truncation=True, max_length=max_length,
+                          return_tensors="pt")
+                for i in range(0, len(snp_sequence), max_length)
+            ]
+            tokenized_data.append(snp_chunks)
+        return tokenized_data
 
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
-    train_dataset = GeneticDataset(X_train_augmented, y_train_augmented, tokenizer)
-    test_dataset = GeneticDataset(X_test_augmented, y_test_augmented, tokenizer)
+    # Tokenize training and testing SNP sequences
+    X_train_tokenized = tokenize_snps(X_train_augmented, tokenizer)
+    X_test_tokenized = tokenize_snps(X_test_augmented, tokenizer)
 
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
+
+    # Custom Dataset for SNPs and Impact Scores
+    class GeneticDataset(Dataset):
+        def __init__(self, tokenized_snp_sequences, labels):
+            self.tokenized_snp_sequences = tokenized_snp_sequences
+            self.labels = labels
+
+        def __len__(self):
+            return len(self.tokenized_snp_sequences)
+
+        def __getitem__(self, idx):
+            return {
+                'snp_chunks': self.tokenized_snp_sequences[idx],
+                'labels': torch.tensor(self.labels[idx])
+            }
+
+    class CustomBERTModel(nn.Module):
+        def __init__(self, embedding_dim, hidden_dim, num_labels=2):
+            super(CustomBERTModel, self).__init__()
+            self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+            self.max_length = 256
+            # BERT model
+            self.bert = BertModel.from_pretrained("bert-base-uncased")
+
+            # Dense layer for classification
+            self.fc = nn.Linear(self.bert.config.hidden_size * 2 + embedding_dim * 2, hidden_dim)
+            self.classifier = nn.Linear(hidden_dim, num_labels)
+
+            # Dropout for regularization
+            self.dropout = nn.Dropout(0.1)
+
+            # Breed and herd year embeddings
+            '''self.breed_embedding = nn.Embedding(num_embeddings=10, embedding_dim=embedding_dim)
+            self.herd_year_embedding = nn.Embedding(num_embeddings=40, embedding_dim=embedding_dim)'''
+
+        def forward(self, snp_chunks):
+            device = next(self.parameters()).device
+
+            # Process SNP chunks in mini-batches
+            snp_pooled_outputs = []
+            for chunk in snp_chunks:
+                encodings = self.tokenizer(chunk, padding="max_length", truncation=True, max_length=self.max_length,
+                                           return_tensors="pt")
+                encodings = {k: v.to(device) for k, v in encodings.items()}
+                outputs = self.bert(**encodings)
+                snp_pooled_outputs.append(outputs.pooler_output)
+            snp_pooled_avg = torch.mean(torch.stack(snp_pooled_outputs), dim=0)
+
+            # Embeddings for breed and herd year
+            '''breed_embeds = self.breed_embedding(breed_ids)
+            herd_year_embeds = self.herd_year_embedding(herd_year_ids)'''
+
+            # Combine all features
+            #combined_features = torch.cat((snp_pooled_avg, breed_embeds, herd_year_embeds), dim=-1)
+            hidden_output = self.fc(self.dropout(snp_pooled_avg))
+            logits = self.classifier(hidden_output)
+
+            return logits
+
+    # Prepare data loaders
+    train_dataset = GeneticDataset(
+        [snp_seq for snp_seq in X_train_augmented],
+        y_train_augmented,
+        tokenizer=tokenizer,
+    )
+    test_dataset = GeneticDataset(
+        [snp_seq for snp_seq in X_test_augmented],
+        y_test_augmented,
+        tokenizer=tokenizer,
+    )
+
+    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    # Load the BERT model
-    model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2)
+    # Load the BERT model for classification (or use a custom model)
+    model = CustomBERTModel(
+        embedding_dim=16,  # Dimension of SNP and impact embeddings
+        hidden_dim=128,  # Dimension of the hidden layer
+        num_labels=2  # Binary classification
+    )
     model.to(device)
 
     # Define the optimizer
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5)
+    optimizer = AdamW(model.parameters(), lr=2e-5)
 
     '''# Learning rate scheduler
     total_steps = len(train_loader) * epochs  # Assuming 3 epochs
@@ -171,70 +178,69 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     loss_fn = torch.nn.CrossEntropyLoss()
     accuracies = []
 
-    # Training loop with learning rate scheduling and evaluation at each epoch
-    for epoch in range(epochs):  # Number of epochs
+    # Training loop with embedding logic
+    for epoch in range(epochs):
         model.train()
         total_loss = 0
         i = 0
         for batch in train_loader:
             optimizer.zero_grad()
-            inputs = {key: val.to(device) for key, val in batch.items() if key != "labels"}
-            labels = batch["labels"].to(device)
 
-            outputs = model(**inputs)
-            loss = loss_fn(outputs.logits, labels)
+            # SNP and impact chunks
+            snp_chunks = batch['snp_chunks']
+            '''breed_ids = batch['breed'].to(device)
+            herd_year_ids = batch['herd_year'].to(device)'''
+            labels = batch['labels'].to(device)
+
+            # Forward pass
+            outputs = model(snp_chunks)
+            loss = loss_fn(outputs, labels)
             total_loss += loss.item()
+
+            # Backward pass
             loss.backward()
             optimizer.step()
-            #scheduler.step()
+
             i += 1
             if printStats:
-                print(
-                    f'Epoch: {epoch}, Loop {i} of {len(train_loader)}, Loss: {loss.item()}, Learning Rate: {optimizer.param_groups[0]["lr"]}'
-                )
+                print(f'Epoch: {epoch}, Batch {i}/{len(train_loader)}, Loss: {loss.item()}')
 
         avg_train_loss = total_loss / len(train_loader)
         if printStats:
-            print(f"Epoch: {epoch}, Average Training Loss: {avg_train_loss}")
+            print(f"Epoch {epoch + 1}, Avg Loss: {avg_train_loss}")
 
-        # Evaluate the model on the test set after each epoch
+        # Evaluation
         model.eval()
         preds = []
         true_labels = []
 
         with torch.no_grad():
             for batch in test_loader:
-                inputs = {
-                    key: val.to(device) for key, val in batch.items() if key != "labels"
-                }
-                labels = batch["labels"].to(device)
+                snp_chunks = batch['snp_chunks']
+                labels = batch['labels'].to(device)
 
-                outputs = model(**inputs)
-                _, predicted = torch.max(outputs.logits, 1)
+                outputs = model(snp_chunks)
+
+                _, predicted = torch.max(outputs, 1)
 
                 preds.extend(predicted.cpu().numpy())
                 true_labels.extend(labels.cpu().numpy())
 
         accuracy = accuracy_score(true_labels, preds)
-        report = classification_report(
-            true_labels,
-            preds,
-            target_names=["No mastitis (Control)", "Mastitis Present (Case)"],
-        )
+        report = classification_report(true_labels, preds, target_names=["No mastitis (Control)", "Mastitis Present (Case)"])
         conf_matrix = confusion_matrix(true_labels, preds)
 
-        if printStats:
+        if(printStats):
             print(f"Epoch: {epoch}, Test Accuracy: {accuracy}")
             print(report)
             print(conf_matrix)
-
-        if savePerf:
+        if(savePerf):
             model_name = f"model_epoch{epoch}_acc{accuracy:.4f}.pt"
-            torch.save(model.state_dict(), os.path.join(MODEL_SAVE_PATH, model_name))
+            #torch.save(model.state_dict(), os.path.join(MODEL_SAVE_PATH, model_name))
 
             # Load current top performances and update
-            top_performances = load_top_performances()
-            update_top_performances(top_performances, accuracy, model_name)
+            top_performances = load_top_performances(TOP_PERFORMANCE_FILE)
+            update_top_performances(top_performances, accuracy, model_name, report, TOP_K, MODEL_SAVE_PATH, TOP_PERFORMANCE_FILE)
         accuracies.append(accuracy)
     return accuracies
 

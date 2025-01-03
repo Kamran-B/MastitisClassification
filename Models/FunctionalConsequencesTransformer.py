@@ -9,6 +9,7 @@ from DataQuality.funtional_consequences import *
 from DataQuality.to_array import bit_reader
 from DataQuality.model_saving import *
 
+
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 TOP_PERFORMANCE_FILE = "top_performancesFuncCons.json"
@@ -17,7 +18,6 @@ MODEL_SAVE_PATH = "../Data/Saved Models/saved_modelsFuncCons"
 
 def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     torch.cuda.manual_seed(seed_value)
-
     torch.manual_seed(seed_value)
     np.random.seed(seed_value)
     random.seed(seed_value)
@@ -82,7 +82,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
     # Custom Dataset for SNPs and Impact Scores
     class GeneticDataset(Dataset):
-        def __init__(self, snp_sequences, impact_sequences, labels, tokenizer, max_length=512):
+        def __init__(self, snp_sequences, impact_sequences, labels, tokenizer, max_length=256):
             self.snp_sequences = snp_sequences
             self.impact_sequences = impact_sequences
             self.labels = labels
@@ -144,6 +144,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
             # Process SNP chunks in mini-batches
             snp_pooled_outputs = []
+            print("Now")
             for chunk in snp_chunks:
                 encodings = self.tokenizer(chunk, padding="max_length", truncation=True, max_length=self.max_length,
                                            return_tensors="pt")
@@ -153,6 +154,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
             snp_pooled_avg = torch.mean(torch.stack(snp_pooled_outputs), dim=0)
 
             # Process impact chunks in mini-batches
+            print("Now2")
             impact_pooled_outputs = []
             for chunk in impact_chunks:
                 encodings = self.tokenizer(chunk, padding="max_length", truncation=True, max_length=self.max_length,
@@ -170,6 +172,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
             combined_features = torch.cat((snp_pooled_avg, impact_pooled_avg, breed_embeds, herd_year_embeds), dim=-1)
             hidden_output = self.fc(self.dropout(combined_features))
             logits = self.classifier(hidden_output)
+            print("Now3")
 
             return logits
 
@@ -190,8 +193,8 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
         tokenizer=tokenizer,
     )
 
-    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
