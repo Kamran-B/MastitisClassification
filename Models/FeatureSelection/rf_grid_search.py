@@ -4,14 +4,14 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 
 
-def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="results.txt"):
+def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="smote_rf_results.txt"):
     # Define a grid of hyperparameters
     param_grid = {
-        "n_estimators": [5],
+        "n_estimators": [100, 200],
         "max_features": ["sqrt"],
-        "min_samples_split": [2],
-        "min_samples_leaf": [1],
-        "max_depth": [3],
+        "min_samples_split": [3, 5],
+        "min_samples_leaf": [3, 5],
+        "max_depth": [3, 6],
     }
 
     # Create all combinations of hyperparameters
