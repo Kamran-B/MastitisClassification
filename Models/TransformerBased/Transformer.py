@@ -10,9 +10,11 @@ from DataQuality.to_array import bit_reader
 from DataQuality.model_saving import *
 
 
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+
 TOP_PERFORMANCE_FILE = "top_performancesFuncCons.json"
 TOP_K = 10
-MODEL_SAVE_PATH = "../../Data/Saved Models/saved_modelsFuncCons"
+MODEL_SAVE_PATH = "../Data/Saved Models/saved_models_base_transformer"
 
 def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     torch.cuda.manual_seed(seed_value)
@@ -28,21 +30,20 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
         os.makedirs(MODEL_SAVE_PATH)
 
     # Create variables
-    #breed_herd_year = '../Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
-    top_4000_snps_binary = '../Data/output_hd_exclude_binary_herd.txt'
-    phenotypes = '../Data/Phenotypes/phenotypes_sorted.txt'
+    breed_herd_year = '../Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
+    top_4000_snps_binary = '../Data/TopSNPs/top_4000_SNPs_binary.txt'
+    phenotypes = '../Data/Phenotypes/phenotypes_sorted_herd.txt'
 
     # Load data from files
-    #herd = load_2d_array_from_file(breed_herd_year)
+    herd = load_2d_array_from_file(breed_herd_year)
     X = bit_reader(top_4000_snps_binary)
     y = load_1d_array_from_file(phenotypes)
 
     # Combine herd data with X
-    '''for rowX, rowH in zip(X, herd):
-        rowX.extend(rowH)'''
+    for rowX, rowH in zip(X, herd):
+        rowX.extend(rowH)
 
-    print(len(X))
-    print(len(y))
+
     # Split data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=seed_value
@@ -62,60 +63,61 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
         X_test, X_test_augmented, y_test, y_test_augmented, 1, 16, seed=seed_value
     )
 
-    def tokenize_snps(snp_sequences, tokenizer, max_length=256):
-        tokenized_data = []
-        for snp_sequence in snp_sequences:
-            snp_chunks = [
-                tokenizer(" ".join(map(str, snp_sequence[i:i + max_length])),
-                          padding="max_length", truncation=True, max_length=max_length,
-                          return_tensors="pt")
-                for i in range(0, len(snp_sequence), max_length)
-            ]
-            tokenized_data.append(snp_chunks)
-        return tokenized_data
-
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-
-    # Tokenize training and testing SNP sequences
-    X_train_tokenized = tokenize_snps(X_train_augmented, tokenizer)
-    X_test_tokenized = tokenize_snps(X_test_augmented, tokenizer)
-
-
     # Custom Dataset for SNPs and Impact Scores
     class GeneticDataset(Dataset):
-        def __init__(self, tokenized_snp_sequences, labels):
-            self.tokenized_snp_sequences = tokenized_snp_sequences
+        def __init__(self, snp_sequences, labels, tokenizer, max_length=512):
+            self.snp_sequences = snp_sequences
             self.labels = labels
+            self.tokenizer = tokenizer
+            self.max_length = max_length
 
         def __len__(self):
-            return len(self.tokenized_snp_sequences)
+            return len(self.snp_sequences)
 
         def __getitem__(self, idx):
+            snp_sequence = self.snp_sequences[idx][:-2]
+            breed = self.snp_sequences[idx][-2]
+            herd_year = self.snp_sequences[idx][-1]
+
+            # Tokenize SNP and impact sequences into chunks
+            snp_chunks = [
+                " ".join(map(str, snp_sequence[i:i + self.max_length]))
+                for i in range(0, len(snp_sequence), self.max_length)
+            ]
+
+            label = torch.tensor(self.labels[idx])
+            breed = torch.tensor(breed, dtype=torch.long)
+            herd_year = torch.tensor(herd_year, dtype=torch.long)
+
             return {
-                'snp_chunks': self.tokenized_snp_sequences[idx],
-                'labels': torch.tensor(self.labels[idx])
+                'snp_chunks': snp_chunks,
+                'breed': breed,
+                'herd_year': herd_year,
+                'labels': label
             }
 
     class CustomBERTModel(nn.Module):
         def __init__(self, embedding_dim, hidden_dim, num_labels=2):
             super(CustomBERTModel, self).__init__()
             self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-            self.max_length = 256
+            self.max_length = 512
             # BERT model
             self.bert = BertModel.from_pretrained("bert-base-uncased")
 
             # Dense layer for classification
-            self.fc = nn.Linear(self.bert.config.hidden_size * 2 + embedding_dim * 2, hidden_dim)
             self.classifier = nn.Linear(hidden_dim, num_labels)
+
+            # Fully connected layer
+            self.fc = nn.Linear(self.bert.config.hidden_size + 2 * embedding_dim, hidden_dim)
 
             # Dropout for regularization
             self.dropout = nn.Dropout(0.1)
 
             # Breed and herd year embeddings
-            '''self.breed_embedding = nn.Embedding(num_embeddings=10, embedding_dim=embedding_dim)
-            self.herd_year_embedding = nn.Embedding(num_embeddings=40, embedding_dim=embedding_dim)'''
+            self.breed_embedding = nn.Embedding(num_embeddings=10, embedding_dim=embedding_dim)
+            self.herd_year_embedding = nn.Embedding(num_embeddings=40, embedding_dim=embedding_dim)
 
-        def forward(self, snp_chunks):
+        def forward(self, snp_chunks, breed_ids, herd_year_ids):
             device = next(self.parameters()).device
 
             # Process SNP chunks in mini-batches
@@ -129,15 +131,18 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
             snp_pooled_avg = torch.mean(torch.stack(snp_pooled_outputs), dim=0)
 
             # Embeddings for breed and herd year
-            '''breed_embeds = self.breed_embedding(breed_ids)
-            herd_year_embeds = self.herd_year_embedding(herd_year_ids)'''
+            breed_embeds = self.breed_embedding(breed_ids)
+            herd_year_embeds = self.herd_year_embedding(herd_year_ids)
 
             # Combine all features
-            #combined_features = torch.cat((snp_pooled_avg, breed_embeds, herd_year_embeds), dim=-1)
-            hidden_output = self.fc(self.dropout(snp_pooled_avg))
+            combined_features = torch.cat((snp_pooled_avg, breed_embeds, herd_year_embeds), dim=-1)
+            hidden_output = self.fc(self.dropout(combined_features))
             logits = self.classifier(hidden_output)
 
             return logits
+
+    # Define the tokenizer
+    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
     # Prepare data loaders
     train_dataset = GeneticDataset(
@@ -151,8 +156,8 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
         tokenizer=tokenizer,
     )
 
-    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -188,12 +193,12 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
             # SNP and impact chunks
             snp_chunks = batch['snp_chunks']
-            '''breed_ids = batch['breed'].to(device)
-            herd_year_ids = batch['herd_year'].to(device)'''
+            breed_ids = batch['breed'].to(device)
+            herd_year_ids = batch['herd_year'].to(device)
             labels = batch['labels'].to(device)
 
             # Forward pass
-            outputs = model(snp_chunks)
+            outputs = model(snp_chunks, breed_ids, herd_year_ids)
             loss = loss_fn(outputs, labels)
             total_loss += loss.item()
 
@@ -217,9 +222,11 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
         with torch.no_grad():
             for batch in test_loader:
                 snp_chunks = batch['snp_chunks']
+                breed_ids = batch['breed'].to(device)
+                herd_year_ids = batch['herd_year'].to(device)
                 labels = batch['labels'].to(device)
 
-                outputs = model(snp_chunks)
+                outputs = model(snp_chunks, breed_ids, herd_year_ids)
 
                 _, predicted = torch.max(outputs, 1)
 
