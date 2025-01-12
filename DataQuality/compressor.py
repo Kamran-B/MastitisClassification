@@ -17,7 +17,7 @@ def read_and_intersect(file1_path, file2_path):
 
     intersection_list = list(set(list1) & set(list2))
 
-    return list1, list2, intersection_list
+    return intersection_list
 
 
 # Filters lines from a file based on whether the first value of each line is present in the provided intersection list, then copies the filtered lines to an output file.
@@ -49,7 +49,14 @@ def sort_file_by_first_column(file_path):
 
 # Removes the first n values from each line of the input file and writes the remaining values to an output file.
 def remove_first_n_values(input_file, output_file, n):
-    with open(input_file, "r") as infile, open(output_file, "w") as outfile:
+    # Count the total number of lines in the input file
+    with open(input_file, "r") as infile:
+        total_lines = sum(1 for _ in infile)
+
+    # Process the file and display progress
+    with open(input_file, "r") as infile, open(output_file, "w") as outfile, tqdm(
+        total=total_lines, desc="Processing lines", unit="line"
+    ) as pbar:
         for line in infile:
             # Split the line into values using spaces as separators
             values = line.split()
@@ -59,6 +66,9 @@ def remove_first_n_values(input_file, output_file, n):
 
             # Join the remaining values and write them to the output file
             outfile.write(" ".join(remaining_values) + "\n")
+
+            # Update progress bar
+            pbar.update(1)
 
 
 # Removes all values except for those specified by the list of indexes from each line of the input file
@@ -81,6 +91,7 @@ def to_binary(input_file, output_file, chunk_size=8192):
     try:
         with open(input_file, "r") as file:
             with open(output_file, "wb") as output:
+                print("opened file")
                 # Initialize tqdm for the entire file
                 total_size = os.path.getsize(input_file)
                 progress_bar = tqdm(
@@ -141,8 +152,8 @@ def expand_list_with_range(lst, offset):
 
 
 def get_common_cows():
-    output_hd_exclude = "output_hd_exclude.raw"
-    mast_lact1 = "mast_lact1.phen"
+    output_hd_exclude = "Data/RawData/raw_data.raw"
+    mast_lact1 = "Data/Phenotypes/phenotypes.phen"
 
     # create intersection list of common cows
     return read_and_intersect(output_hd_exclude, mast_lact1)
@@ -187,20 +198,21 @@ def clean_heardxyear():
 # Converts SNPs from raw_data to binary format
 def clean_raw_data():
     # All SNPS versions:
-    raw_data_exclude = "raw_data.raw"
-    raw_data_cleaned = "raw_data_cleaned.txt"
-    output_hd_exclude_binary = "output_hd_exclude_binary_herd.txt"
+    raw_data_exclude = "Data/RawData/raw_data.raw"
+    raw_data_cleaned = "Data/RawData/raw_data_cleaned.txt"
+    output_hd_exclude_binary = "Data/output_hd_exclude_binary_herd.txt"
+    filtered_data = "Data/filtered_data"
 
     common_cows = get_common_cows()
 
     # filter and sort raw_data
     print("filtering and sorting raw_data_exclude")
-    filter_and_copy(raw_data_exclude, common_cows, output_hd_exclude_binary)
-    sort_file_by_first_column(output_hd_exclude_binary)
+    filter_and_copy(raw_data_exclude, common_cows, filtered_data)
+    sort_file_by_first_column(filtered_data)
 
     # remove first 6 cols from raw_data
     print("removing first 6 columns from raw_data_exclude")
-    remove_first_n_values(output_hd_exclude_binary, raw_data_cleaned, 6)
+    remove_first_n_values(filtered_data, raw_data_cleaned, 6)
 
     # compress raw_data to binary
     print("compressing raw_data_exclude to binary")
@@ -228,3 +240,5 @@ def get_top_200_SNPs_expanded():
     # compress top_snps to binary
     print("compressing significant SNPs to binary")
     to_binary(top_200_SNPs_expanded, top_200_SNPs_expanded_binary)
+
+clean_raw_data()
