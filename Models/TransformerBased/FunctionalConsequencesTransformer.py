@@ -14,7 +14,7 @@ os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 TOP_PERFORMANCE_FILE = "top_performancesFuncCons.json"
 TOP_K = 10
-MODEL_SAVE_PATH = "../Data/Saved Models/saved_modelsFuncCons"
+MODEL_SAVE_PATH = "../../Data/Saved Models/saved_modelsFuncCons"
 
 def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     torch.cuda.manual_seed(seed_value)
