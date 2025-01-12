@@ -6,10 +6,10 @@ from Transformer import main
 
 # Configuration
 iterations = 10  # Number of runs
-epochs = 4  # Epochs per run
+epochs = 5  # Epochs per run
 random_seed = True  # Randomize seed
 
-description = "Running base transformer with SNPs, herd year, and breed embedded together, no func conseq"
+description = "Running base transformer with SNPs, herd year, and breed embedded together, no func coseq and no overlapping window"
 
 # Prepare to store all results
 results = []
