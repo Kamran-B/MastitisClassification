@@ -65,7 +65,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
     # Custom Dataset for SNPs and Impact Scores
     class GeneticDataset(Dataset):
-        def __init__(self, snp_sequences, labels, tokenizer, max_length=256):
+        def __init__(self, snp_sequences, labels, tokenizer, max_length=512):
             self.snp_sequences = snp_sequences
             self.labels = labels
             self.tokenizer = tokenizer
@@ -105,8 +105,10 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
             self.bert = BertModel.from_pretrained("bert-base-uncased")
 
             # Dense layer for classification
-            self.fc = nn.Linear(self.bert.config.hidden_size * 2 + embedding_dim * 2, hidden_dim)
             self.classifier = nn.Linear(hidden_dim, num_labels)
+
+            # Fully connected layer
+            self.fc = nn.Linear(self.bert.config.hidden_size + 2 * embedding_dim, hidden_dim)
 
             # Dropout for regularization
             self.dropout = nn.Dropout(0.1)
@@ -120,7 +122,6 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
             # Process SNP chunks in mini-batches
             snp_pooled_outputs = []
-            print("Now")
             for chunk in snp_chunks:
                 encodings = self.tokenizer(chunk, padding="max_length", truncation=True, max_length=self.max_length,
                                            return_tensors="pt")
@@ -137,7 +138,6 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
             combined_features = torch.cat((snp_pooled_avg, breed_embeds, herd_year_embeds), dim=-1)
             hidden_output = self.fc(self.dropout(combined_features))
             logits = self.classifier(hidden_output)
-            print("Now3")
 
             return logits
 
@@ -146,20 +146,18 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
     # Prepare data loaders
     train_dataset = GeneticDataset(
-        [snp_seq for snp_seq, _ in X_train_augmented],
-        [impact_seq for _, impact_seq in X_train_augmented],
+        [snp_seq for snp_seq in X_train_augmented],
         y_train_augmented,
         tokenizer=tokenizer,
     )
     test_dataset = GeneticDataset(
-        [snp_seq for snp_seq, _ in X_test_augmented],
-        [impact_seq for _, impact_seq in X_test_augmented],
+        [snp_seq for snp_seq in X_test_augmented],
         y_test_augmented,
         tokenizer=tokenizer,
     )
 
-    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
