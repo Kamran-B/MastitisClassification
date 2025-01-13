@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.model_selection import train_test_split
-from imblearn.over_sampling import SMOTE
+from imblearn.over_sampling import KMeansSMOTE
 from tqdm import tqdm
 
 from DataQuality.to_array import bit_reader
@@ -20,11 +20,26 @@ X_train, X_test, y_train, y_test = train_test_split(
 del X, y
 
 
-def incremental_smote(X, y, chunk_size=10000, random_state=42):
-    smote = SMOTE(random_state=random_state)
+def incremental_kmeans_smote(X, y, chunk_size=10000, random_state=42, kmeans_args=None):
+    """
+    Incremental processing using KMeansSMOTE for large datasets.
+
+    Parameters:
+    - X: Features.
+    - y: Labels.
+    - chunk_size: Number of samples to process at a time.
+    - random_state: Random seed.
+    - kmeans_args: Dictionary of additional arguments for KMeansSMOTE.
+
+    Returns:
+    - X_resampled: Resampled feature array.
+    - y_resampled: Resampled label array.
+    """
+    kmeans_args = kmeans_args or {}
+    smote = KMeansSMOTE(random_state=random_state, **kmeans_args)
     X_resampled, y_resampled = [], []
 
-    print("begin processing")
+    print("Begin processing")
 
     # Process data in chunks with a progress bar
     for i in tqdm(range(0, len(X), chunk_size), desc="Processing Chunks"):
@@ -37,8 +52,10 @@ def incremental_smote(X, y, chunk_size=10000, random_state=42):
     return np.vstack(X_resampled), np.hstack(y_resampled)
 
 
-# Apply incremental SMOTE
-X_train_resampled, y_train_resampled = incremental_smote(X_train, y_train)
+# Apply incremental KMeansSMOTE
+X_train_resampled, y_train_resampled = incremental_kmeans_smote(
+    X_train, y_train, chunk_size=5000, random_state=42, kmeans_args={"k_neighbors": 5}
+)
 
 # Deletes from memory to free up RAM space
 del X_train, y_train
