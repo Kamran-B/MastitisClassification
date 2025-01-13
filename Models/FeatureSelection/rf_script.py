@@ -1,6 +1,8 @@
 import numpy as np
 from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import SMOTE
+from tqdm import tqdm
+
 from DataQuality.to_array import bit_reader
 from helper import read_numbers_from_file
 from rf_grid_search import run_grid_search
@@ -22,8 +24,10 @@ def incremental_smote(X, y, chunk_size=10000, random_state=42):
     smote = SMOTE(random_state=random_state)
     X_resampled, y_resampled = [], []
 
-    # Process data in chunks
-    for i in range(0, len(X), chunk_size):
+    print("begin processing")
+
+    # Process data in chunks with a progress bar
+    for i in tqdm(range(0, len(X), chunk_size), desc="Processing Chunks"):
         end = min(i + chunk_size, len(X))
         X_chunk, y_chunk = smote.fit_resample(X[i:end], y[i:end])
         X_resampled.append(X_chunk)
