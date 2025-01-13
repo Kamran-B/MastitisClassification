@@ -2,10 +2,13 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import KMeansSMOTE
 from tqdm import tqdm
+from joblib import Parallel, delayed
+from scipy.sparse import csr_matrix
 
 from DataQuality.to_array import bit_reader
 from Models.FeatureSelection.helper import read_numbers_from_file
 from Models.FeatureSelection.rf_grid_search import run_grid_search
+
 
 # Read data
 X = bit_reader("Data/output_hd_exclude_binary_herd.txt")
@@ -20,42 +23,82 @@ X_train, X_test, y_train, y_test = train_test_split(
 del X, y
 
 
-def incremental_kmeans_smote(X, y, chunk_size=10000, random_state=42, kmeans_args=None):
+def sample_features_for_smote(X, num_features):
     """
-    Incremental processing using KMeansSMOTE for large datasets.
+    Sample a subset of features for SMOTE.
 
     Parameters:
-    - X: Features.
-    - y: Labels.
-    - chunk_size: Number of samples to process at a time.
-    - random_state: Random seed.
-    - kmeans_args: Dictionary of additional arguments for KMeansSMOTE.
+    - X: Original dataset with all features.
+    - num_features: Number of features to sample for SMOTE.
+
+    Returns:
+    - X_sampled: Dataset with sampled features.
+    - selected_indices: Indices of selected features.
+    """
+    selected_indices = np.random.choice(X.shape[1], size=num_features, replace=False)
+    return X[:, selected_indices], selected_indices
+
+
+def parallel_kmeans_smote(X, y, num_chunks, kmeans_args=None):
+    """
+    Apply KMeansSMOTE in parallel to handle large datasets.
+
+    Parameters:
+    - X: Feature matrix.
+    - y: Target labels.
+    - num_chunks: Number of chunks to divide the dataset into.
+    - kmeans_args: Additional arguments for KMeansSMOTE.
 
     Returns:
     - X_resampled: Resampled feature array.
     - y_resampled: Resampled label array.
     """
     kmeans_args = kmeans_args or {}
-    smote = KMeansSMOTE(random_state=random_state, **kmeans_args)
-    X_resampled, y_resampled = [], []
+    chunk_size = len(X) // num_chunks
 
-    print("Begin processing")
+    def process_chunk(start_idx):
+        end_idx = min(start_idx + chunk_size, len(X))
+        smote = KMeansSMOTE(random_state=42, **kmeans_args)
+        return smote.fit_resample(X[start_idx:end_idx], y[start_idx:end_idx])
 
-    # Process data in chunks with a progress bar
-    for i in tqdm(range(0, len(X), chunk_size), desc="Processing Chunks"):
-        end = min(i + chunk_size, len(X))
-        X_chunk, y_chunk = smote.fit_resample(X[i:end], y[i:end])
-        X_resampled.append(X_chunk)
-        y_resampled.append(y_chunk)
+    results = Parallel(n_jobs=-1)(
+        delayed(process_chunk)(i) for i in range(0, len(X), chunk_size)
+    )
 
-    # Concatenate all chunks
+    X_resampled, y_resampled = zip(*results)
     return np.vstack(X_resampled), np.hstack(y_resampled)
 
 
-# Apply incremental KMeansSMOTE
-X_train_resampled, y_train_resampled = incremental_kmeans_smote(
-    X_train, y_train, chunk_size=5000, random_state=42, kmeans_args={"k_neighbors": 5}
+def print_class_distribution(y, message="Class distribution"):
+    """
+    Print the number of examples in each class.
+
+    Parameters:
+    - y: Array of class labels.
+    - message: Optional message to display.
+    """
+    unique_classes, counts = np.unique(y, return_counts=True)
+    print(f"{message}:")
+    for cls, count in zip(unique_classes, counts):
+        print(f"Class {cls}: {count} examples")
+
+
+# Print the original class distribution
+print_class_distribution(y_train, message="Original class distribution")
+
+# Use 10,000 features for SMOTE, but apply SMOTE on this subset
+X_train_sampled, selected_features = sample_features_for_smote(X_train, num_features=10000)
+
+# Convert to sparse format to save memory
+X_train_sparse = csr_matrix(X_train_sampled)
+
+# Apply SMOTE with KMeans in parallel, adjust for high-dimensional data
+X_train_resampled, y_train_resampled = parallel_kmeans_smote(
+    X_train_sparse, y_train, num_chunks=10, kmeans_args={"n_clusters": 100, "k_neighbors": 3}
 )
+
+# Print the resampled class distribution
+print_class_distribution(y_train_resampled, message="Resampled class distribution")
 
 # Deletes from memory to free up RAM space
 del X_train, y_train
