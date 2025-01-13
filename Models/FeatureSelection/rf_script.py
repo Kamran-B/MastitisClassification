@@ -97,7 +97,7 @@ X_train_sparse = csr_matrix(X_train_sampled)
 
 # Apply SMOTE with KMeans in parallel, adjust for high-dimensional data
 X_train_resampled, y_train_resampled = parallel_kmeans_smote(
-    X_train_sparse, y_train, num_chunks=10, kmeans_args={"n_clusters": 100, "k_neighbors": 3}
+    X_train_sparse, y_train, num_chunks=10
 )
 
 # Print the resampled class distribution
