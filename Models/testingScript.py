@@ -9,7 +9,7 @@ iterations = 10  # Number of runs
 epochs = 5  # Epochs per run
 random_seed = True  # Randomize seed
 
-description = "Running base transformer with SNPs, herd year, and breed embedded together, no func coseq and no overlapping window"
+description = "Running base transformer with SNPs, herd year, and breed embedded together, no func coseq and with overlapping window (also changed hidden dim to 64 from 128)"
 
 # Prepare to store all results
 results = []
@@ -63,7 +63,7 @@ output = {
 }
 
 # Save to file
-with open("experiment_notes.json", "w") as f:
+with open("experiment_notes2.json", "w") as f:
     json.dump(output, f, indent=4)
 
 print("Results saved to experiment_notes.json")

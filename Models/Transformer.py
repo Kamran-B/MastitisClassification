@@ -8,15 +8,21 @@ from transformers import BertModel, BertTokenizer
 from DataQuality.funtional_consequences import *
 from DataQuality.to_array import bit_reader
 from DataQuality.model_saving import *
+import warnings
+
 
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
-TOP_PERFORMANCE_FILE = "top_performancesFuncCons.json"
-TOP_K = 10
-MODEL_SAVE_PATH = "../Data/Saved Models/saved_models_base_transformer"
+
 
 def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
+
+    TOP_PERFORMANCE_FILE = "top_performancesFuncCons.json"
+    TOP_K = 10
+    MODEL_SAVE_PATH = "../Data/Saved Models/saved_models_base_transformer"
+    warnings.filterwarnings("ignore", message=".*gamma.*renamed.*")
+    warnings.filterwarnings("ignore", message=".*beta.*renamed.*")
     torch.cuda.manual_seed(seed_value)
     torch.manual_seed(seed_value)
     np.random.seed(seed_value)
@@ -65,11 +71,12 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
     # Custom Dataset for SNPs and Impact Scores
     class GeneticDataset(Dataset):
-        def __init__(self, snp_sequences, labels, tokenizer, max_length=512):
+        def __init__(self, snp_sequences, labels, tokenizer, max_length=512, overlap=256):
             self.snp_sequences = snp_sequences
             self.labels = labels
             self.tokenizer = tokenizer
             self.max_length = max_length
+            self.overlap = overlap  # Overlap size between chunks
 
         def __len__(self):
             return len(self.snp_sequences)
@@ -79,10 +86,10 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
             breed = self.snp_sequences[idx][-2]
             herd_year = self.snp_sequences[idx][-1]
 
-            # Tokenize SNP and impact sequences into chunks
+            # Tokenize SNP and impact sequences into overlapping chunks
             snp_chunks = [
                 " ".join(map(str, snp_sequence[i:i + self.max_length]))
-                for i in range(0, len(snp_sequence), self.max_length)
+                for i in range(0, len(snp_sequence), self.max_length - self.overlap)
             ]
 
             label = torch.tensor(self.labels[idx])
@@ -165,7 +172,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     # Load the BERT model for classification (or use a custom model)
     model = CustomBERTModel(
         embedding_dim=16,  # Dimension of SNP and impact embeddings
-        hidden_dim=128,  # Dimension of the hidden layer
+        hidden_dim=64,  # Dimension of the hidden layer
         num_labels=2  # Binary classification
     )
     model.to(device)
