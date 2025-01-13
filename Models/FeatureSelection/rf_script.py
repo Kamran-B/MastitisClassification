@@ -14,6 +14,9 @@ from Models.FeatureSelection.rf_grid_search import run_grid_search
 X = bit_reader("Data/output_hd_exclude_binary_herd.txt")
 y = read_numbers_from_file("Data/Phenotypes/phenotypes_sorted.txt")
 
+# Convert X to a NumPy array if it's not already
+X = np.array(X)
+
 # Split the dataset into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
