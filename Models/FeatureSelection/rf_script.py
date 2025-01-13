@@ -1,7 +1,6 @@
 import numpy as np
 from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import SMOTENC
-from scipy.sparse import csr_matrix
 
 from DataQuality.to_array import bit_reader
 from Models.FeatureSelection.helper import read_numbers_from_file
@@ -16,7 +15,7 @@ y = read_numbers_from_file("Data/Phenotypes/phenotypes_sorted.txt")
 X = np.array(X)
 
 # Define categorical feature indices (all features in your case)
-categorical_features = np.arange(X.shape[1])  # Assuming all features are categorical
+categorical_features = list(range(X.shape[1]))  # Ensures it's a list of indices
 
 # Split the dataset into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(
@@ -81,11 +80,11 @@ print_class_distribution(y_train, message="Original class distribution")
 # Use 10,000 features for SMOTE, but apply SMOTE on this subset
 X_train_sampled, selected_features = sample_features_for_smote(X_train, num_features=10000)
 
-# Convert to sparse format to save memory (optional)
-X_train_sparse = csr_matrix(X_train_sampled)
+# Convert selected_features to a list for compatibility with SMOTENC
+selected_features_list = list(selected_features)
 
 # Apply SMOTENC for oversampling
-X_train_resampled, y_train_resampled = smote_resampling(X_train_sparse.toarray(), y_train, categorical_features=selected_features)
+X_train_resampled, y_train_resampled = smote_resampling(X_train_sampled, y_train, categorical_features=selected_features_list)
 
 # Print the resampled class distribution
 print_class_distribution(y_train_resampled, message="Resampled class distribution")
