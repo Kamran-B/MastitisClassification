@@ -8,11 +8,11 @@ from tqdm import tqdm
 def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="smote_rf_results.txt"):
     # Define a grid of hyperparameters
     param_grid = {
-        "n_estimators": [30],
+        "n_estimators": [15, 30, 50],
         "max_features": ["sqrt"],
-        "min_samples_split": [12],
-        "min_samples_leaf": [5],
-        "max_depth": [10],
+        "min_samples_split": [10, 12],
+        "min_samples_leaf": [3, 5, 7],
+        "max_depth": [7, 10, 12],
     }
 
     mtry_fraction = 0.005  # Mtry as a fraction of the total number of predictors (0.005 seems to be best)
