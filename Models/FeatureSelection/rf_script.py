@@ -61,15 +61,29 @@ def parallel_kmeans_smote(X, y, num_chunks, kmeans_args=None):
 
     def process_chunk(start_idx):
         end_idx = min(start_idx + chunk_size, X.shape[0])
+
+        # Check if the chunk has more than one class
+        unique_classes = np.unique(y[start_idx:end_idx])
+        if len(unique_classes) < 2:
+            print(f"Skipping chunk {start_idx}-{end_idx} due to single class: {unique_classes}")
+            return None  # Skip this chunk
+
         smote = KMeansSMOTE(random_state=42, **kmeans_args)  # Ensure only valid arguments
         return smote.fit_resample(X[start_idx:end_idx], y[start_idx:end_idx])
 
     results = Parallel(n_jobs=-1)(
-        delayed(process_chunk)(i) for i in range(0, X.shape[0], chunk_size)  # Use X.shape[0] here as well
+        delayed(process_chunk)(i) for i in range(0, X.shape[0], chunk_size)
     )
 
-    X_resampled, y_resampled = zip(*results)
-    return np.vstack(X_resampled), np.hstack(y_resampled)
+    # Filter out any None results due to skipped chunks
+    results = [result for result in results if result is not None]
+
+    # Ensure that results are not empty before stacking
+    if results:
+        X_resampled, y_resampled = zip(*results)
+        return np.vstack(X_resampled), np.hstack(y_resampled)
+    else:
+        raise ValueError("No valid chunks found for resampling.")
 
 
 def print_class_distribution(y, message="Class distribution"):
