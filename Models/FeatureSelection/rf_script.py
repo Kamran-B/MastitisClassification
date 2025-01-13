@@ -11,12 +11,6 @@ from Models.FeatureSelection.rf_grid_search import run_grid_search
 X = bit_reader("Data/output_hd_exclude_binary_herd.txt")
 y = read_numbers_from_file("Data/Phenotypes/phenotypes_sorted.txt")
 
-# Convert X to a NumPy array if it's not already
-X = np.array(X)
-
-# Define categorical feature indices (all features in your case)
-categorical_features = list(range(X.shape[1]))  # Ensures it's a list of indices
-
 # Split the dataset into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
@@ -24,40 +18,6 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 # Deletes from memory to free up RAM space
 del X, y
-
-
-def sample_features_for_smote(X, num_features):
-    """
-    Sample a subset of features for SMOTE.
-
-    Parameters:
-    - X: Original dataset with all features.
-    - num_features: Number of features to sample for SMOTE.
-
-    Returns:
-    - X_sampled: Dataset with sampled features.
-    - selected_indices: Indices of selected features.
-    """
-    selected_indices = np.random.choice(X.shape[1], size=num_features, replace=False)
-    return X[:, selected_indices], selected_indices
-
-
-def smote_resampling(X, y, categorical_features):
-    """
-    Apply SMOTENC to handle imbalanced datasets with categorical features.
-
-    Parameters:
-    - X: Feature matrix.
-    - y: Target labels.
-    - categorical_features: Indices of categorical features.
-
-    Returns:
-    - X_resampled: Resampled feature array.
-    - y_resampled: Resampled label array.
-    """
-    smote = SMOTENC(categorical_features=categorical_features, random_state=42)
-    X_resampled, y_resampled = smote.fit_resample(X, y)
-    return X_resampled, y_resampled
 
 
 def print_class_distribution(y, message="Class distribution"):
