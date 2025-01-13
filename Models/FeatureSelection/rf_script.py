@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import SMOTENC
 
 from DataQuality.to_array import bit_reader
-from Models.FeatureSelection.helper import read_numbers_from_file
+from Models.FeatureSelection.helper import read_numbers_from_file, duplicate_and_insert
 from Models.FeatureSelection.rf_grid_search import run_grid_search
 
 
@@ -77,20 +77,17 @@ def print_class_distribution(y, message="Class distribution"):
 # Print the original class distribution
 print_class_distribution(y_train, message="Original class distribution")
 
-# Use 10,000 features for SMOTE, but apply SMOTE on this subset
-X_train_sampled, selected_features = sample_features_for_smote(X_train, num_features=10000)
-
-# Convert selected_features to a list for compatibility with SMOTENC
-selected_features_list = list(selected_features)
-
-# Apply SMOTENC for oversampling
-X_train_resampled, y_train_resampled = smote_resampling(X_train_sampled, y_train, categorical_features=selected_features_list)
+X_train_augmented = X_train.copy()
+y_train_augmented = y_train.copy()
+duplicate_and_insert(
+        X_train, X_train_augmented, y_train, y_train_augmented, 1, 16, seed=42
+    )
 
 # Print the resampled class distribution
-print_class_distribution(y_train_resampled, message="Resampled class distribution")
+print_class_distribution(y_train_augmented, message="Resampled class distribution")
 
 # Deletes from memory to free up RAM space
 del X_train, y_train
 
 # Run the grid search with resampled data
-run_grid_search(X_train_resampled, y_train_resampled, X_test, y_test)
+run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test)
