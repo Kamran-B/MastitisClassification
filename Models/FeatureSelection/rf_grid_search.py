@@ -8,12 +8,18 @@ from tqdm import tqdm
 def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="smote_rf_results.txt"):
     # Define a grid of hyperparameters
     param_grid = {
-        "n_estimators": [100, 200],
+        "n_estimators": [30],
         "max_features": ["sqrt"],
-        "min_samples_split": [3, 5],
-        "min_samples_leaf": [3, 5],
-        "max_depth": [3, 6],
+        "min_samples_split": [12],
+        "min_samples_leaf": [5],
+        "max_depth": [10],
     }
+
+    mtry_fraction = 0.005  # Mtry as a fraction of the total number of predictors (0.005 seems to be best)
+
+    # Calculate the actual Mtry value based on the fraction
+    num_predictors = len(X_train_augmented[0])
+    mtry = int(np.ceil(mtry_fraction * num_predictors))
 
     # Create all combinations of hyperparameters
     param_combinations = list(itertools.product(
@@ -35,11 +41,13 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
         # Create a RandomForestClassifier with the current hyperparameters
         random_forest_model = RandomForestClassifier(
             n_estimators=n_estimators,
-            max_features=max_features,
+            max_features=mtry,
             min_samples_split=min_samples_split,
             min_samples_leaf=min_samples_leaf,
             max_depth=max_depth,
             random_state=42,
+            class_weight={0: 1, 1: 4000},
+            oob_score=True,
             n_jobs=-1,  # Use all CPUs
         )
 
