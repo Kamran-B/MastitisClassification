@@ -42,14 +42,14 @@ def sample_features_for_smote(X, num_features):
     return X[:, selected_indices], selected_indices
 
 
-def parallel_kmeans_smote(X, y, num_chunks, kmeans_args=None):
+def parallel_kmeans_smote(X, y, num_chunks=10, kmeans_args=None):
     """
     Apply KMeansSMOTE in parallel to handle large datasets.
 
     Parameters:
     - X: Feature matrix.
     - y: Target labels.
-    - num_chunks: Number of chunks to divide the dataset into.
+    - num_chunks: Desired number of chunks to divide the dataset into.
     - kmeans_args: Additional arguments for KMeansSMOTE.
 
     Returns:
@@ -57,7 +57,9 @@ def parallel_kmeans_smote(X, y, num_chunks, kmeans_args=None):
     - y_resampled: Resampled label array.
     """
     kmeans_args = kmeans_args or {}
-    chunk_size = X.shape[0] // num_chunks  # Use X.shape[0] instead of len(X)
+
+    # Calculate chunk size based on the number of chunks
+    chunk_size = max(1, X.shape[0] // num_chunks)
 
     def process_chunk(start_idx):
         end_idx = min(start_idx + chunk_size, X.shape[0])
