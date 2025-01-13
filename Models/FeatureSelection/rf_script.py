@@ -4,8 +4,8 @@ from imblearn.over_sampling import SMOTE
 from tqdm import tqdm
 
 from DataQuality.to_array import bit_reader
-from helper import read_numbers_from_file
-from rf_grid_search import run_grid_search
+from Models.FeatureSelection.helper import read_numbers_from_file
+from Models.FeatureSelection.rf_grid_search import run_grid_search
 
 # Read data
 X = bit_reader("Data/output_hd_exclude_binary_herd.txt")
