@@ -1,8 +1,6 @@
 import numpy as np
 from sklearn.model_selection import train_test_split
-from imblearn.over_sampling import KMeansSMOTE
-from tqdm import tqdm
-from joblib import Parallel, delayed
+from imblearn.over_sampling import SMOTENC
 from scipy.sparse import csr_matrix
 
 from DataQuality.to_array import bit_reader
@@ -16,6 +14,9 @@ y = read_numbers_from_file("Data/Phenotypes/phenotypes_sorted.txt")
 
 # Convert X to a NumPy array if it's not already
 X = np.array(X)
+
+# Define categorical feature indices (all features in your case)
+categorical_features = np.arange(X.shape[1])  # Assuming all features are categorical
 
 # Split the dataset into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(
@@ -42,50 +43,22 @@ def sample_features_for_smote(X, num_features):
     return X[:, selected_indices], selected_indices
 
 
-def parallel_kmeans_smote(X, y, num_chunks=10, kmeans_args=None):
+def smote_resampling(X, y, categorical_features):
     """
-    Apply KMeansSMOTE in parallel to handle large datasets.
+    Apply SMOTENC to handle imbalanced datasets with categorical features.
 
     Parameters:
     - X: Feature matrix.
     - y: Target labels.
-    - num_chunks: Desired number of chunks to divide the dataset into.
-    - kmeans_args: Additional arguments for KMeansSMOTE.
+    - categorical_features: Indices of categorical features.
 
     Returns:
     - X_resampled: Resampled feature array.
     - y_resampled: Resampled label array.
     """
-    kmeans_args = kmeans_args or {}
-
-    # Calculate chunk size based on the number of chunks
-    chunk_size = max(1, X.shape[0] // num_chunks)
-
-    def process_chunk(start_idx):
-        end_idx = min(start_idx + chunk_size, X.shape[0])
-
-        # Check if the chunk has more than one class
-        unique_classes = np.unique(y[start_idx:end_idx])
-        if len(unique_classes) < 2:
-            print(f"Skipping chunk {start_idx}-{end_idx} due to single class: {unique_classes}")
-            return None  # Skip this chunk
-
-        smote = KMeansSMOTE(random_state=42, **kmeans_args)  # Ensure only valid arguments
-        return smote.fit_resample(X[start_idx:end_idx], y[start_idx:end_idx])
-
-    results = Parallel(n_jobs=-1)(
-        delayed(process_chunk)(i) for i in range(0, X.shape[0], chunk_size)
-    )
-
-    # Filter out any None results due to skipped chunks
-    results = [result for result in results if result is not None]
-
-    # Ensure that results are not empty before stacking
-    if results:
-        X_resampled, y_resampled = zip(*results)
-        return np.vstack(X_resampled), np.hstack(y_resampled)
-    else:
-        raise ValueError("No valid chunks found for resampling.")
+    smote = SMOTENC(categorical_features=categorical_features, random_state=42)
+    X_resampled, y_resampled = smote.fit_resample(X, y)
+    return X_resampled, y_resampled
 
 
 def print_class_distribution(y, message="Class distribution"):
@@ -108,13 +81,11 @@ print_class_distribution(y_train, message="Original class distribution")
 # Use 10,000 features for SMOTE, but apply SMOTE on this subset
 X_train_sampled, selected_features = sample_features_for_smote(X_train, num_features=10000)
 
-# Convert to sparse format to save memory
+# Convert to sparse format to save memory (optional)
 X_train_sparse = csr_matrix(X_train_sampled)
 
-# Apply SMOTE with KMeans in parallel, adjust for high-dimensional data
-X_train_resampled, y_train_resampled = parallel_kmeans_smote(
-    X_train_sparse, y_train, num_chunks=10
-)
+# Apply SMOTENC for oversampling
+X_train_resampled, y_train_resampled = smote_resampling(X_train_sparse.toarray(), y_train, categorical_features=selected_features)
 
 # Print the resampled class distribution
 print_class_distribution(y_train_resampled, message="Resampled class distribution")
