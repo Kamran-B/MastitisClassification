@@ -34,7 +34,7 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
 
     # Iterate over each combination of parameters with a progress bar
     for params in tqdm(param_combinations, desc="Training models"):
-        n_estimators, max_features, min_samples_split, min_samples_leaf, max_depth = params
+        n_estimators, min_samples_split, min_samples_leaf, max_depth = params
 
         # Create a RandomForestClassifier with the current hyperparameters
         random_forest_model = RandomForestClassifier(
