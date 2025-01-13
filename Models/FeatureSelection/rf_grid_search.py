@@ -1,15 +1,14 @@
 import itertools
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, f1_score
 from tqdm import tqdm
 
 
-def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="smote_rf_results.txt"):
+def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="rf_results.txt"):
     # Define a grid of hyperparameters
     param_grid = {
         "n_estimators": [15, 30, 50],
-        "max_features": ["sqrt"],
         "min_samples_split": [10, 12],
         "min_samples_leaf": [3, 5, 7],
         "max_depth": [7, 10, 12],
@@ -24,13 +23,12 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
     # Create all combinations of hyperparameters
     param_combinations = list(itertools.product(
         param_grid["n_estimators"],
-        param_grid["max_features"],
         param_grid["min_samples_split"],
         param_grid["min_samples_leaf"],
         param_grid["max_depth"],
     ))
 
-    best_accuracy = 0
+    best_f1_score = 0
     best_params = None
     best_model = None
 
@@ -58,11 +56,9 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
         y_pred = random_forest_model.predict(X_test)
 
         # Evaluate the model
-        accuracy = accuracy_score(y_test, y_pred)
-
-        # Check if this is the best model so far
-        if accuracy > best_accuracy:
-            best_accuracy = accuracy
+        f1 = f1_score(y_test, y_pred, average="weighted")  # Use F1 score instead
+        if f1 > best_f1_score:
+            best_f1_score = f1
             best_params = params
             best_model = random_forest_model
 
@@ -80,7 +76,7 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
 
     # Write results to the output file
     with open(output_file, "w") as file:
-        file.write(f"Best Accuracy: {best_accuracy:.4f}\n")
+        file.write(f"Best F1 Score: {best_f1_score:.4f}\n")
         file.write(f"Best Parameters: {best_params}\n\n")
         file.write("Classification Report:\n")
         file.write(report + "\n")
