@@ -57,15 +57,15 @@ def parallel_kmeans_smote(X, y, num_chunks, kmeans_args=None):
     - y_resampled: Resampled label array.
     """
     kmeans_args = kmeans_args or {}
-    chunk_size = X.shape[0] // num_chunks
+    chunk_size = X.shape[0] // num_chunks  # Use X.shape[0] instead of len(X)
 
     def process_chunk(start_idx):
         end_idx = min(start_idx + chunk_size, X.shape[0])
-        smote = KMeansSMOTE(random_state=42, **kmeans_args)
+        smote = KMeansSMOTE(random_state=42, **kmeans_args)  # Ensure only valid arguments
         return smote.fit_resample(X[start_idx:end_idx], y[start_idx:end_idx])
 
     results = Parallel(n_jobs=-1)(
-        delayed(process_chunk)(i) for i in range(0, X.shape[0], chunk_size)
+        delayed(process_chunk)(i) for i in range(0, X.shape[0], chunk_size)  # Use X.shape[0] here as well
     )
 
     X_resampled, y_resampled = zip(*results)
