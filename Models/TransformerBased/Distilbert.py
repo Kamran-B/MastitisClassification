@@ -254,4 +254,4 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     accuracies.append(accuracy)
 
 if __name__=="__main__":
-    main(42, 4, True, True)
+    main(422, 4, True, True)
