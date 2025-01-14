@@ -1,17 +1,17 @@
 import itertools
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report, f1_score
+from sklearn.metrics import classification_report, f1_score
 from tqdm import tqdm
 
 
 def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="rf_results.txt"):
     # Define a grid of hyperparameters
     param_grid = {
-        "n_estimators": [15, 30, 50],
-        "min_samples_split": [10, 12],
-        "min_samples_leaf": [3, 5, 7],
-        "max_depth": [7, 10, 12],
+        "n_estimators": [30],
+        "min_samples_split": [10],
+        "min_samples_leaf": [3],
+        "max_depth": [12],
     }
 
     mtry_fraction = 0.005  # Mtry as a fraction of the total number of predictors (0.005 seems to be best)
@@ -46,7 +46,13 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
             random_state=42,
             class_weight={0: 1, 1: 4000},
             oob_score=True,
-            n_jobs=-1,  # Use all CPUs
+            n_jobs=-1,
+            criterion='entropy',  # Experiment with this
+            max_samples=0.8,  # Optional to try different sample sizes
+            min_impurity_decrease=0.001,  # To avoid overfitting
+            max_leaf_nodes=100,  # Limit number of leaf nodes
+            warm_start=True,  # Optionally keep adding trees
+            bootstrap=True  # Use bootstrap sampling (default)
         )
 
         # Train the model
