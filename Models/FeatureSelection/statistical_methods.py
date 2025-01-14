@@ -7,4 +7,4 @@ X = bit_reader("Data/output_hd_exclude_binary_herd.txt")
 y = read_numbers_from_file("Data/Phenotypes/phenotypes_sorted.txt")
 
 # Calculate feature importance and write top 10,000 to a file
-calculate_feature_importance(X, y, top_n=10000)
+calculate_feature_importance(X, y)
