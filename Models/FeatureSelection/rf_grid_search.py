@@ -47,11 +47,11 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
             class_weight={0: 1, 1: 4000},
             oob_score=True,
             n_jobs=-1,
-            criterion='entropy',  # Experiment with this
+            #criterion='entropy',  # Experiment with this
             max_samples=0.8,  # Optional to try different sample sizes
-            min_impurity_decrease=0.001,  # To avoid overfitting
-            max_leaf_nodes=100,  # Limit number of leaf nodes
-            warm_start=True,  # Optionally keep adding trees
+            #min_impurity_decrease=0.001,  # To avoid overfitting
+            #max_leaf_nodes=100,  # Limit number of leaf nodes
+            #warm_start=True,  # Optionally keep adding trees
             bootstrap=True  # Use bootstrap sampling (default)
         )
 

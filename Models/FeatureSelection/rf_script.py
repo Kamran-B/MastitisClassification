@@ -1,7 +1,5 @@
 import numpy as np
 from sklearn.model_selection import train_test_split
-from imblearn.over_sampling import SMOTENC
-
 from DataQuality.to_array import bit_reader
 from Models.FeatureSelection.helper import read_numbers_from_file, duplicate_and_insert
 from Models.FeatureSelection.rf_grid_search import run_grid_search
