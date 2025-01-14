@@ -9,16 +9,17 @@ def log_memory_usage(stage):
     process = psutil.Process(os.getpid())
     print(f"[{stage}] Memory usage: {process.memory_info().rss / (1024 ** 2):.2f} MB")
 
-def calculate_feature_importance(X, y, output_file="top_features.txt", top_n=10000):
+def calculate_feature_importance(X, y, output_file="top_features.txt", top_n=10000, batch_size=100):
     """
     Calculate feature importance by combining Chi-squared and variance rankings.
-    Process features one by one for maximum memory efficiency.
+    Optimize by processing features in small batches for speed and memory efficiency.
 
     Args:
         X (numpy.ndarray): Feature matrix (samples x features).
         y (numpy.ndarray): Target vector (samples,).
         output_file (str): Path to the file where top features will be written.
         top_n (int): Number of top features to write to the file.
+        batch_size (int): Number of features to process in each batch.
 
     Returns:
         None
@@ -29,28 +30,29 @@ def calculate_feature_importance(X, y, output_file="top_features.txt", top_n=100
     y = np.array(y)
 
     num_features = X.shape[1]
-    variances = []
-    chi2_scores = []
+    variances = np.zeros(num_features)
+    chi2_scores = np.zeros(num_features)
 
-    print("Calculating feature importance one by one...")
-    for feature_idx in range(num_features):
-        # Calculate variance for the current feature
-        variance = np.var(X[:, feature_idx])
-        variances.append(variance)
+    print("Calculating feature importance in batches...")
+    for start_idx in range(0, num_features, batch_size):
+        end_idx = min(start_idx + batch_size, num_features)
+        batch_indices = range(start_idx, end_idx)
 
-        # Calculate Chi-squared score for the current feature
-        chi2_score, _ = chi2(X[:, feature_idx].reshape(-1, 1), y)
-        chi2_scores.append(chi2_score[0])
+        # Compute variance for the batch
+        variances[start_idx:end_idx] = np.var(X[:, batch_indices], axis=0)
+
+        # Compute Chi-squared for the batch
+        chi2_batch, _ = chi2(X[:, batch_indices], y)
+        chi2_scores[start_idx:end_idx] = chi2_batch
 
         # Log progress
-        if feature_idx % 1000 == 0 or feature_idx == num_features - 1:
-            print(f"Processed {feature_idx + 1}/{num_features} features...")
-            log_memory_usage(f"After feature {feature_idx + 1}")
+        print(f"Processed features {start_idx + 1}-{end_idx}/{num_features}...")
+        log_memory_usage(f"After processing batch {start_idx // batch_size + 1}")
 
     # Step 3: Rank variances and Chi-squared scores
     print("Ranking features based on variance and Chi-squared scores...")
-    variance_rankings = rankdata(-np.array(variances), method="min")
-    chi2_rankings = rankdata(-np.array(chi2_scores), method="min")
+    variance_rankings = rankdata(-variances, method="min")
+    chi2_rankings = rankdata(-chi2_scores, method="min")
 
     # Step 4: Combine rankings
     combined_scores = variance_rankings + chi2_rankings
