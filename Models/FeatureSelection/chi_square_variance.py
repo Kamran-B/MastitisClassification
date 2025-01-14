@@ -10,7 +10,7 @@ def log_memory_usage(stage):
     process = psutil.Process(os.getpid())
     print(f"[{stage}] Memory usage: {process.memory_info().rss / (1024 ** 2):.2f} MB")
 
-def calculate_feature_importance_chi2_only_csv(X, y, output_file="top_features.csv", top_n=10000, batch_size=500):
+def calculate_feature_importance(X, y, output_file="top_features.csv", top_n=10000, batch_size=500):
     """
     Calculate feature importance using only Chi-squared scores and related columns.
     Includes: combined ranking, chi-squared p-value, and chi-squared ranking.
