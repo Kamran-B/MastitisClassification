@@ -37,17 +37,15 @@ def benjamini_hochberg(p_values, alpha=0.05):
     return adjusted_p_values[np.argsort(rank_order)]
 
 
-def calculate_feature_importance(X, y, output_file="top_features.csv", top_n=10000, batch_size=5000,
-                                                   alpha=0.05):
+def calculate_feature_importance_chi2_with_fdr_csv(X, y, output_file="top_features.csv", batch_size=5000, alpha=0.05):
     """
     Calculate feature importance using Chi-squared scores and apply FDR control (Benjamini-Hochberg).
-    Sort features by adjusted p-value (lowest FDR). Writes the top features to a CSV.
+    Sort features by adjusted p-value (lowest FDR). Writes all features to a CSV.
 
     Args:
         X (numpy.ndarray): Feature matrix (samples x features).
         y (numpy.ndarray): Target vector (samples,).
-        output_file (str): Path to the file where top features will be written.
-        top_n (int): Number of top features to write to the file.
+        output_file (str): Path to the file where features will be written.
         batch_size (int): Number of features to process in each batch.
         alpha (float): Desired False Discovery Rate threshold (default 0.05).
 
@@ -85,15 +83,15 @@ def calculate_feature_importance(X, y, output_file="top_features.csv", top_n=100
     print("Sorting features by adjusted p-value (FDR)...")
     sorted_indices = np.argsort(adjusted_p_values)  # Sort by adjusted p-value (ascending)
 
-    # Step 5: Write sorted results to CSV
+    # Step 5: Write all results to CSV
     with open(output_file, mode='w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["Feature", "Adjusted_P_Value"])
-        for i in range(min(top_n, len(sorted_indices))):
+        for i in range(len(sorted_indices)):
             feature_idx = sorted_indices[i]
             writer.writerow([feature_idx, adjusted_p_values[feature_idx]])
-            if i % 10000 == 0:  # Log progress every 100 features
-                print(f"Written top {i}/{top_n} features so far...")
+            if i % 10000 == 0:  # Log progress every 10000 features
+                print(f"Written feature {i + 1}/{len(sorted_indices)}")
 
-    print(f"Top {top_n} features written to {output_file}")
+    print(f"All features written to {output_file}")
     log_memory_usage("End")
