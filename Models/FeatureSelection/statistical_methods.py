@@ -1,6 +1,6 @@
 from DataQuality.to_array import bit_reader
 from Models.FeatureSelection.helper import read_numbers_from_file
-from chi_square_variance import calculate_feature_importance
+from Models.FeatureSelection.chi_square_variance import calculate_feature_importance
 
 # Read data
 X = bit_reader("Data/output_hd_exclude_binary_herd.txt")
