@@ -40,5 +40,5 @@ if __name__ == "__main__":
     y = np.array(read_numbers_from_file("Data/Phenotypes/phenotypes_sorted_herd.txt"))
     # Rank SNPs by mutual information
     ranked_snps = rank_snps_by_mutual_information(X, y)
-    ranked_snps.to_csv("ranked_snps.csv", index=False)
+    ranked_snps.to_csv("ranked_snps_MI.csv", index=False)
     print(ranked_snps)
