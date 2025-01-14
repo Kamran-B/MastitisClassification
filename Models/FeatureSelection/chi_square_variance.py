@@ -9,7 +9,7 @@ def log_memory_usage(stage):
     process = psutil.Process(os.getpid())
     print(f"[{stage}] Memory usage: {process.memory_info().rss / (1024 ** 2):.2f} MB")
 
-def calculate_feature_importance_sequential(X, y, output_file="top_features.txt", top_n=10000):
+def calculate_feature_importance(X, y, output_file="top_features.txt", top_n=10000):
     """
     Calculate feature importance by combining Chi-squared and variance rankings.
     Process features one by one for maximum memory efficiency.
