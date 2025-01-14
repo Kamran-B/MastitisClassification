@@ -37,7 +37,7 @@ def benjamini_hochberg(p_values, alpha=0.05):
     return adjusted_p_values[np.argsort(rank_order)]
 
 
-def calculate_feature_importance_chi2_with_fdr_csv(X, y, output_file="top_features.csv", batch_size=5000, alpha=0.05):
+def calculate_feature_importance(X, y, output_file="top_features.csv", batch_size=5000, alpha=0.05):
     """
     Calculate feature importance using Chi-squared scores and apply FDR control (Benjamini-Hochberg).
     Sort features by adjusted p-value (lowest FDR). Writes all features to a CSV.
