@@ -3,7 +3,7 @@ import os
 import numpy as np
 from tqdm import tqdm
 
-def bit_reader(input_file, chunk_size=131072):
+def bit_reader(input_file, chunk_size=524288):
     """
     Optimized bit reader for faster processing of binary files.
     """
