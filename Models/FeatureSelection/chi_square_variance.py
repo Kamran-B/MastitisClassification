@@ -3,12 +3,18 @@ from sklearn.feature_selection import chi2
 from scipy.stats import rankdata
 from multiprocessing import Pool
 
-def compute_variance_for_feature(X_slice):
-    return np.var(X_slice, axis=0)
 
-def compute_chi2_for_feature(X_slice, y):
-    chi2_scores, _ = chi2(X_slice, y)
-    return chi2_scores
+def compute_variance_for_feature_batch(args):
+    """Compute variance for a batch of features."""
+    X, idxs = args
+    return np.var(X[:, idxs], axis=0)
+
+
+def compute_chi2_for_feature_batch(args):
+    """Compute chi-squared for a batch of features."""
+    X, y, idxs = args
+    return chi2(X[:, idxs], y)[0]
+
 
 def calculate_feature_importance(X, y, output_file="top_features.txt", top_n=10000, num_workers=4):
     """
@@ -35,13 +41,13 @@ def calculate_feature_importance(X, y, output_file="top_features.txt", top_n=100
     # Step 1: Calculate variances in parallel
     print("Calculating variances in parallel...")
     with Pool(num_workers) as pool:
-        variances_list = pool.map(lambda idxs: compute_variance_for_feature(X[:, idxs]), feature_indices)
+        variances_list = pool.map(compute_variance_for_feature_batch, [(X, idxs) for idxs in feature_indices])
     variances = np.concatenate(variances_list)
 
     # Step 2: Calculate Chi-squared scores in parallel
     print("Calculating Chi-squared scores in parallel...")
     with Pool(num_workers) as pool:
-        chi2_scores_list = pool.map(lambda idxs: compute_chi2_for_feature(X[:, idxs], y), feature_indices)
+        chi2_scores_list = pool.map(compute_chi2_for_feature_batch, [(X, y, idxs) for idxs in feature_indices])
     chi2_scores = np.concatenate(chi2_scores_list)
 
     # Step 3: Rank variances and Chi-squared scores
