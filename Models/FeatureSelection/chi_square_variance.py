@@ -20,10 +20,10 @@ def compute_chi2_for_feature_batch(args):
     X, y, idxs = args
     return chi2(X[:, idxs], y)[0]
 
-def calculate_feature_importance(X, y, output_file="top_features.txt", top_n=10000, num_workers=4, chunk_size=1000):
+def calculate_feature_importance(X, y, output_file="top_features.txt", top_n=10000, num_workers=4, chunk_size=100):
     """
     Calculate feature importance by combining Chi-squared and variance rankings.
-    Optimize for memory efficiency and add verbose logging.
+    Optimize for memory efficiency by using smaller chunks.
 
     Args:
         X (numpy.ndarray): Feature matrix (samples x features).
@@ -46,7 +46,7 @@ def calculate_feature_importance(X, y, output_file="top_features.txt", top_n=100
                        for start in range(0, num_features, chunk_size)]
 
     # Step 1: Calculate variances in chunks
-    print("Calculating variances in parallel...")
+    print("Calculating variances in parallel with small chunks...")
     variances = []
     with Pool(num_workers) as pool:
         for i, variance_batch in enumerate(
@@ -57,7 +57,7 @@ def calculate_feature_importance(X, y, output_file="top_features.txt", top_n=100
     variances = np.concatenate(variances)
 
     # Step 2: Calculate Chi-squared scores in chunks
-    print("Calculating Chi-squared scores in parallel...")
+    print("Calculating Chi-squared scores in parallel with small chunks...")
     chi2_scores = []
     with Pool(num_workers) as pool:
         for i, chi2_batch in enumerate(
