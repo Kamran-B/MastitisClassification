@@ -1,18 +1,14 @@
 import numpy as np
 from sklearn.feature_selection import chi2
 from scipy.stats import rankdata
-from multiprocessing import Pool  # Importing multiprocessing
+from multiprocessing import Pool
 
+def compute_variance_for_feature(X_slice):
+    return np.var(X_slice, axis=0)
 
-# Move the variance calculation and chi-squared calculation functions outside the main function
-def compute_variance_for_feature(X, feature_idx):
-    return np.var(X[:, feature_idx])
-
-
-def compute_chi2_for_feature(X, y, feature_idx):
-    chi2_score, _ = chi2(X[:, feature_idx].reshape(-1, 1), y)  # Reshape to 2D for chi2
-    return chi2_score[0]  # Chi-squared value for the feature
-
+def compute_chi2_for_feature(X_slice, y):
+    chi2_scores, _ = chi2(X_slice, y)
+    return chi2_scores
 
 def calculate_feature_importance(X, y, output_file="top_features.txt", top_n=10000, num_workers=4):
     """
@@ -29,31 +25,35 @@ def calculate_feature_importance(X, y, output_file="top_features.txt", top_n=100
     Returns:
         None
     """
-
-    # Ensure X is a NumPy array
+    # Ensure X and y are NumPy arrays
     X = np.array(X)
     y = np.array(y)
 
-    # Step 1: Calculate variance in parallel for each feature
+    num_features = X.shape[1]
+    feature_indices = np.array_split(range(num_features), num_workers)
+
+    # Step 1: Calculate variances in parallel
     print("Calculating variances in parallel...")
     with Pool(num_workers) as pool:
-        variances = pool.starmap(compute_variance_for_feature, [(X, feature_idx) for feature_idx in range(X.shape[1])])
+        variances_list = pool.map(lambda idxs: compute_variance_for_feature(X[:, idxs]), feature_indices)
+    variances = np.concatenate(variances_list)
 
-    # Step 2: Calculate Chi-squared scores in parallel for each feature
+    # Step 2: Calculate Chi-squared scores in parallel
     print("Calculating Chi-squared scores in parallel...")
     with Pool(num_workers) as pool:
-        chi2_scores = pool.starmap(compute_chi2_for_feature, [(X, y, feature_idx) for feature_idx in range(X.shape[1])])
+        chi2_scores_list = pool.map(lambda idxs: compute_chi2_for_feature(X[:, idxs], y), feature_indices)
+    chi2_scores = np.concatenate(chi2_scores_list)
 
     # Step 3: Rank variances and Chi-squared scores
     print("Ranking features based on variance and Chi-squared scores...")
-    variance_rankings = rankdata(-np.array(variances), method="min")  # Negative for descending order
-    chi2_rankings = rankdata(-np.array(chi2_scores), method="min")  # Negative for descending order
+    variance_rankings = rankdata(-variances, method="min")
+    chi2_rankings = rankdata(-chi2_scores, method="min")
 
     # Step 4: Combine rankings
     combined_scores = variance_rankings + chi2_rankings
 
     # Step 5: Sort features by combined ranking
-    combined_rankings = np.argsort(combined_scores)  # Indices of sorted features (ascending order)
+    combined_rankings = np.argsort(combined_scores)
 
     # Step 6: Write top N features to a file
     with open(output_file, "w") as f:

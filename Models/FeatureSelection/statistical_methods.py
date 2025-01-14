@@ -1,5 +1,5 @@
 from DataQuality.to_array import bit_reader
-from helper import read_numbers_from_file, duplicate_and_insert
+from Models.FeatureSelection.helper import read_numbers_from_file
 from chi_square_variance import calculate_feature_importance
 
 # Read data
