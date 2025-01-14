@@ -1,12 +1,10 @@
 import itertools
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, f1_score, precision_recall_curve
-import matplotlib.pyplot as plt
+from imblearn.ensemble import BalancedRandomForestClassifier  # Import the balanced random forest classifier
+from sklearn.metrics import classification_report, f1_score
 from tqdm import tqdm
 
-
-def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="rf_results.txt", plot_file="precision_recall_curve.png"):
+def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="rf_results.txt"):
     # Define a grid of hyperparameters
     param_grid = {
         "n_estimators": [30],
@@ -37,32 +35,33 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
     for params in tqdm(param_combinations, desc="Training models"):
         n_estimators, min_samples_split, min_samples_leaf, max_depth = params
 
-        # Create a RandomForestClassifier with the current hyperparameters
-        random_forest_model = RandomForestClassifier(
+        # Create a BalancedRandomForestClassifier with the current hyperparameters
+        balanced_rf_model = BalancedRandomForestClassifier(
             n_estimators=n_estimators,
             max_features=mtry,
             min_samples_split=min_samples_split,
             min_samples_leaf=min_samples_leaf,
             max_depth=max_depth,
             random_state=42,
-            class_weight={0: 1, 1: 4000},
+            class_weight={0: 1, 1: 4000},  # Adjust class weights as needed
             oob_score=True,
             n_jobs=-1,
+            max_samples=0.9,  # Optional to try different sample sizes
             bootstrap=True  # Use bootstrap sampling (default)
         )
 
         # Train the model
-        random_forest_model.fit(X_train_augmented, y_train_augmented)
+        balanced_rf_model.fit(X_train_augmented, y_train_augmented)
 
         # Make predictions on the test set
-        y_pred = random_forest_model.predict(X_test)
+        y_pred = balanced_rf_model.predict(X_test)
 
         # Evaluate the model
-        f1 = f1_score(y_test, y_pred, average="weighted")
+        f1 = f1_score(y_test, y_pred, average="weighted")  # Use F1 score instead
         if f1 > best_f1_score:
             best_f1_score = f1
             best_params = params
-            best_model = random_forest_model
+            best_model = balanced_rf_model
 
     # Generate a classification report for the best model
     y_pred_best = best_model.predict(X_test)
@@ -76,23 +75,6 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
     feature_importances = best_model.feature_importances_
     feature_importance_indices = np.argsort(feature_importances)[::-1]  # Sort in descending order
 
-    # Calculate the precision-recall curve for the best model
-    y_probs = best_model.predict_proba(X_test)[:, 1]  # Get the probabilities for the positive class
-    precision, recall, _ = precision_recall_curve(y_test, y_probs)
-
-    # Plot the Precision-Recall curve
-    plt.figure(figsize=(8, 6))
-    plt.plot(recall, precision, color='blue', label='Precision-Recall Curve')
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.title('Precision-Recall Curve')
-    plt.grid(True)
-    plt.legend(loc='best')
-
-    # Save the plot as a PNG file
-    plt.savefig(plot_file, format='png')
-    plt.close()  # Close the plot to free memory
-
     # Write results to the output file
     with open(output_file, "w") as file:
         file.write(f"Best F1 Score: {best_f1_score:.4f}\n")
@@ -105,4 +87,3 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
             file.write(f"Feature {idx}: {feature_importances[idx]:.6f}\n")
 
     print(f"Results written to {output_file}")
-    print(f"Precision-Recall curve saved to {plot_file}")
