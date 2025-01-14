@@ -1,11 +1,12 @@
 import itertools
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, f1_score
+from sklearn.metrics import classification_report, f1_score, precision_recall_curve
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 
-def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="rf_results.txt"):
+def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="rf_results.txt", plot_file="precision_recall_curve.png"):
     # Define a grid of hyperparameters
     param_grid = {
         "n_estimators": [30],
@@ -47,11 +48,6 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
             class_weight={0: 1, 1: 4000},
             oob_score=True,
             n_jobs=-1,
-            #criterion='entropy',  # Experiment with this
-            max_samples=0.8,  # Optional to try different sample sizes
-            #min_impurity_decrease=0.001,  # To avoid overfitting
-            #max_leaf_nodes=100,  # Limit number of leaf nodes
-            #warm_start=True,  # Optionally keep adding trees
             bootstrap=True  # Use bootstrap sampling (default)
         )
 
@@ -62,7 +58,7 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
         y_pred = random_forest_model.predict(X_test)
 
         # Evaluate the model
-        f1 = f1_score(y_test, y_pred, average="weighted")  # Use F1 score instead
+        f1 = f1_score(y_test, y_pred, average="weighted")
         if f1 > best_f1_score:
             best_f1_score = f1
             best_params = params
@@ -80,6 +76,23 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
     feature_importances = best_model.feature_importances_
     feature_importance_indices = np.argsort(feature_importances)[::-1]  # Sort in descending order
 
+    # Calculate the precision-recall curve for the best model
+    y_probs = best_model.predict_proba(X_test)[:, 1]  # Get the probabilities for the positive class
+    precision, recall, _ = precision_recall_curve(y_test, y_probs)
+
+    # Plot the Precision-Recall curve
+    plt.figure(figsize=(8, 6))
+    plt.plot(recall, precision, color='blue', label='Precision-Recall Curve')
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision-Recall Curve')
+    plt.grid(True)
+    plt.legend(loc='best')
+
+    # Save the plot as a PNG file
+    plt.savefig(plot_file, format='png')
+    plt.close()  # Close the plot to free memory
+
     # Write results to the output file
     with open(output_file, "w") as file:
         file.write(f"Best F1 Score: {best_f1_score:.4f}\n")
@@ -92,3 +105,4 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
             file.write(f"Feature {idx}: {feature_importances[idx]:.6f}\n")
 
     print(f"Results written to {output_file}")
+    print(f"Precision-Recall curve saved to {plot_file}")
