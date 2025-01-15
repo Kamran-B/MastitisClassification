@@ -12,9 +12,9 @@ from DataQuality.model_saving import *
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
-TOP_PERFORMANCE_FILE = "top_performancesFuncCons.json"
+TOP_PERFORMANCE_FILE = "top_performances.json"
 TOP_K = 10
-MODEL_SAVE_PATH = "../Data/Saved Models/saved_models_base_transformer"
+MODEL_SAVE_PATH = "Data/Saved Models/saved_models_distil_transformer"
 
 def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     torch.cuda.empty_cache()
@@ -166,7 +166,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
     # Load the BERT model for classification (or use a custom model)
     model = CustomBERTModel(
-        embedding_dim=8,  # Dimension of SNP and impact embeddings
+        embedding_dim=16,  # Dimension of SNP and impact embeddings
         hidden_dim=128,  # Dimension of the hidden layer
         num_labels=2  # Binary classification
     )
@@ -253,5 +253,87 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
     accuracies.append(accuracy)
 
+
+
+
+
+def EvalScript():
+    import random
+    import numpy as np
+    import json
+    from datetime import datetime
+
+    # Configuration
+    iterations = 3  # Number of runs
+    epochs = 3  # Epochs per run
+    random_seed = True  # Randomize seed
+
+    description = "Running distilibert transformer with SNPs, herd year, and breed embedded together, no func coseq and without overlapping window"
+
+    # Prepare to store all results
+    results = []
+
+    # Run experiment
+    for run_num in range(1, iterations + 1):
+        # Set seed
+        seed = random.randint(1, 1000) if random_seed else 42
+        print(f"Running with seed: {seed}")
+
+        # Run main function and collect accuracies
+        accuracies = main(seed, epochs, False, True)
+        fullAcc = np.array(accuracies)
+
+        # Calculate stats
+        avg_accuracy = fullAcc.mean()
+        max_accuracy = fullAcc.max()
+
+        # Save results for this run
+        results.append({
+            "run_number": run_num,
+            "seed": seed,
+            "accuracies_per_epoch": accuracies,
+            "average_accuracy": avg_accuracy,
+            "max_accuracy": max_accuracy
+        })
+
+        # Display results for this run
+        print(f"Average accuracy for run {run_num}: {avg_accuracy}")
+        print(f"Highest accuracy for run {run_num}: {max_accuracy}")
+
+    # Calculate overall stats
+    all_accuracies = np.concatenate([np.array(result["accuracies_per_epoch"]) for result in results])
+    overall_avg_accuracy = all_accuracies.mean()
+    overall_max_accuracy = max(result["max_accuracy"] for result in results)
+
+    # Display overall stats
+    print(f"Overall average accuracy across all runs and epochs: {overall_avg_accuracy}")
+    print(f"Overall highest accuracy across all runs: {overall_max_accuracy}")
+
+    # Save results to JSON
+    output = {
+        "experiment_date": datetime.now().isoformat(),
+        "description": description,
+        "total_runs": iterations,
+        "epochs_per_run": epochs,
+        "random_seed_enabled": random_seed,
+        "overall_average_accuracy": overall_avg_accuracy,
+        "overall_max_accuracy": overall_max_accuracy,
+        "runs": results
+    }
+
+    # Save to file
+    with open("experiment_notes.json", "w") as f:
+        json.dump(output, f, indent=4)
+
+    print("Results saved to experiment_notes.json")
+
+
+
+
+
+
 if __name__=="__main__":
+    '''If you want to run many iterations call the EvalScript function instead
+    Make sure to change file name of experiment_notes.json after each run as it overwrites data currently
+    (should prb change that)'''
     main(422, 4, True, True)
