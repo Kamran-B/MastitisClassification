@@ -7,7 +7,7 @@ from tqdm import tqdm
 def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="rf_results.txt"):
     # Define a grid of hyperparameters
     param_grid = {
-        "n_estimators": [25, 30, 35],
+        "n_estimators": [20, 25],
         "min_samples_split": [10],
         "min_samples_leaf": [3],
         "max_depth": [15],
