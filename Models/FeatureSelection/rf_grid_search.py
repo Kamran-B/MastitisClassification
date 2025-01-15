@@ -76,8 +76,8 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
         target_names=["No mastitis (Control)", "Mastitis Present (Case)"],
     )
 
-    # Get feature importance scores from the best model
-    feature_importances = best_model.base_estimator_.feature_importances_  # Accessing the base RandomForest model's feature importances
+    # Get feature importance scores from the best model's underlying RandomForest model
+    feature_importances = best_model.estimator_.feature_importances_  # Accessing the base RandomForest model's feature importances
     feature_importance_indices = np.argsort(feature_importances)[::-1]  # Sort in descending order
 
     # Write results to the output file
