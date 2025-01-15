@@ -1,4 +1,6 @@
 import os
+
+import pandas as pd
 from tqdm import tqdm
 from DataQuality.funtional_consequences import load_1d_array_from_file
 
@@ -241,4 +243,76 @@ def get_top_200_SNPs_expanded():
     print("compressing significant SNPs to binary")
     to_binary(top_200_SNPs_expanded, top_200_SNPs_expanded_binary)
 
-clean_raw_data()
+
+def get_top_SNPs_chi2():
+    # Top SNPs
+    top500_SNPs_chi2 = "top500_SNPs_chi2.txt"
+    top500_SNPs_chi2_binary = "top500_SNPs_chi2_binary.txt"
+    top500_SNPs_chi2_indices_file = "ranked_snps_chi_2.csv"
+    raw_data_cleaned = "Data/RawData/raw_data_cleaned.txt"
+
+    # Load the first 500 rows of the first column as a list
+    top500_SNPs_chi2_indices = pd.read_csv(top500_SNPs_chi2_indices_file, nrows=500)["Feature"].tolist()
+
+    # filter raw_data by significant SNPs
+    print("filtering raw_data by significant SNPs")
+    extract_specified_columns(
+        raw_data_cleaned, top500_SNPs_chi2, top500_SNPs_chi2_indices
+    )
+
+    # compress top_snps to binary
+    print("compressing significant SNPs to binary")
+    to_binary(top500_SNPs_chi2, top500_SNPs_chi2_binary)
+
+def get_top_SNPs_mi():
+    # Top SNPs
+    top500_SNPs_mi = "Data/TopSNPs/MutualInfo/top500_SNPs_mi.txt"
+    top500_SNPs_mi_binary = "Data/TopSNPs/MutualInfo/top500_SNPs_mi_binary.txt"
+    top500_SNPs_mi_indices_file = "Data/TopSNPs/MutualInfo/ranked_snps_MI.csv"
+    raw_data_cleaned = "Data/RawData/raw_data_cleaned.txt"
+
+    # Load the first 500 rows of the first column as a list
+    top500_SNPs_mi_indices = (
+        pd.read_csv(top500_SNPs_mi_indices_file, nrows=500)["SNP"]
+        .str.replace("SNP_", "", regex=False)  # Remove "SNP_"
+        .astype(int)  # Convert to integers
+        .tolist()  # Convert to list
+    )
+    # filter raw_data by significant SNPs
+    print("filtering raw_data by significant SNPs")
+    extract_specified_columns(
+        raw_data_cleaned, top500_SNPs_mi, top500_SNPs_mi_indices
+    )
+
+    # compress top_snps to binary
+    print("compressing significant SNPs to binary")
+    to_binary(top500_SNPs_mi, top500_SNPs_mi_binary)
+
+def get_top_SNPs_pca():
+    # Top SNPs
+    top500_SNPs_pca = "Data/TopSNPs/PCA/top500_SNPs_pca.txt"
+    top500_SNPs_pca_binary = "Data/TopSNPs/PCA/top500_SNPs_pca_binary.txt"
+    top500_SNPs_pca_indices_file = "Data/TopSNPs/PCA/ranked_snps_pca.csv"
+    raw_data_cleaned = "Data/RawData/raw_data_cleaned.txt"
+
+    # Load the first 500 rows of the first column as a list
+    top500_SNPs_pca_indices = (
+        pd.read_csv(top500_SNPs_pca_indices_file, nrows=500)["SNP"]
+        .str.replace("SNP_", "", regex=False)  # Remove "SNP_"
+        .astype(int)  # Convert to integers
+        .tolist()  # Convert to list
+    )
+    # filter raw_data by significant SNPs
+    print("filtering raw_data by significant SNPs")
+    extract_specified_columns(
+        raw_data_cleaned, top500_SNPs_pca, top500_SNPs_pca_indices
+    )
+
+    # compress top_snps to binary
+    print("compressing significant SNPs to binary")
+    to_binary(top500_SNPs_pca, top500_SNPs_pca_binary)
+
+#clean_raw_data()
+#get_top_SNPs_chi2()
+#get_top_SNPs_mi()
+get_top_SNPs_pca()
