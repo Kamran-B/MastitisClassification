@@ -30,9 +30,9 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
         os.makedirs(MODEL_SAVE_PATH)
 
     # Create variables
-    breed_herd_year = '../Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
-    top_4000_snps_binary = '../Data/TopSNPs/top_4000_SNPs_binary.txt'
-    phenotypes = '../Data/Phenotypes/phenotypes_sorted_herd.txt'
+    breed_herd_year = 'Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
+    top_4000_snps_binary = 'Data/TopSNPs/top_4000_SNPs_binary.txt'
+    phenotypes = 'Data/Phenotypes/phenotypes_sorted_herd_func_conseq.txt'
 
     # Load data from files
     herd = load_2d_array_from_file(breed_herd_year)
