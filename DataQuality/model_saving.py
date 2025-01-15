@@ -6,11 +6,25 @@ def save_top_performances(top_performances, TOP_PERFORMANCE_FILE):
     with open(TOP_PERFORMANCE_FILE, 'w') as f:
         json.dump(top_performances, f, indent=4)
 
+
 def load_top_performances(TOP_PERFORMANCE_FILE):
     if os.path.exists(TOP_PERFORMANCE_FILE):
-        with open(TOP_PERFORMANCE_FILE, 'r') as f:
-            return json.load(f)
-    return []
+        # Check if the file is empty
+        if os.stat(TOP_PERFORMANCE_FILE).st_size == 0:
+            print(f"The file {TOP_PERFORMANCE_FILE} is empty. Returning empty list.")
+            return []
+
+        # Try to load the JSON content
+        try:
+            with open(TOP_PERFORMANCE_FILE, 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            print(f"Error: {TOP_PERFORMANCE_FILE} contains invalid JSON. Returning empty list.")
+            return []
+    else:
+        # If the file does not exist, return an empty list
+        print(f"The file {TOP_PERFORMANCE_FILE} does not exist. Returning empty list.")
+        return []
 
 
 def update_top_performances(top_performances, accuracy, model_name, report, TOP_K, MODEL_SAVE_PATH, TOP_PERFORMANCE_FILE):
