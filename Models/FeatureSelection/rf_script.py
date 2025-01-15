@@ -1,3 +1,5 @@
+import csv
+
 import numpy as np
 from sklearn.model_selection import train_test_split
 from DataQuality.to_array import bit_reader
@@ -47,5 +49,30 @@ print_class_distribution(y_train_augmented, message="Resampled class distributio
 # Deletes from memory to free up RAM space
 del X_train, y_train
 
-# Run the grid search with resampled data
-run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test)
+# Initialize a dictionary to accumulate feature importances
+combined_feature_importance_dict = {}
+
+# Run the grid search with different random seeds and combine results
+seeds = [101, 202, 303, 404, 42]
+for seed in seeds:
+    result_dict = run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, seed)
+
+    # Add the feature importances to the combined dictionary
+    for feature, importance in result_dict.items():
+        if feature in combined_feature_importance_dict:
+            combined_feature_importance_dict[feature] += importance
+        else:
+            combined_feature_importance_dict[feature] = importance
+
+# Sort the dictionary by importance values in descending order
+sorted_feature_importance_dict = dict(sorted(combined_feature_importance_dict.items(), key=lambda item: item[1], reverse=True))
+
+# Write the sorted dictionary to a CSV file
+with open("combined_feature_importances.csv", mode="w", newline="") as csv_file:
+    writer = csv.writer(csv_file)
+    writer.writerow(["Feature", "Combined Importance"])
+
+    for feature, importance in sorted_feature_importance_dict.items():
+        writer.writerow([f"Feature {feature}", f"{importance:.6f}"])
+
+print("Results written to combined_feature_importances.csv")

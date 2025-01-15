@@ -26,7 +26,7 @@ def get_top_500_snp_ids(file_path):
     return snp_indices
 
 
-def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
+def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None):
     torch.cuda.empty_cache()
 
     torch.cuda.manual_seed(seed_value)
@@ -43,19 +43,18 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
     # Create variables
     breed_herd_year = '../../Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
-    top_4000_snps_binary = '../../Data/output_hd_exclude_binary_herd.txt'
     phenotypes = '../../Data/Phenotypes/phenotypes_sorted_herd.txt'
 
-    top500 = get_top_500_snp_ids('../../SNPLists/ranked_snps_MI.csv')
+    #top500 = get_top_500_snp_ids('../../SNPLists/ranked_snps_MI.csv')
 
     # Load data from files
     herd = load_2d_array_from_file(breed_herd_year)
-    X = np.array(bit_reader(top_4000_snps_binary))
+    X = np.array(bit_reader(top_snps))
     y = load_1d_array_from_file(phenotypes)
 
-    snp_indices = [index for index in top500 if index < len(X[0])]
-    print(snp_indices)
-    X = X[:, snp_indices].tolist()
+    # snp_indices = [index for index in top500 if index < len(X[0])]
+    # print(snp_indices)
+    # X = X[:, snp_indices].tolist()
 
     # Combine herd data with X
     for rowX, rowH in zip(X, herd):
@@ -273,7 +272,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
 
 
-def EvalScript():
+def EvalScript(top_snps):
     import random
     import numpy as np
     import json
@@ -296,7 +295,7 @@ def EvalScript():
         print(f"Running with seed: {seed}")
 
         # Run main function and collect accuracies
-        accuracies = main(seed, epochs, False, True)
+        accuracies = main(seed, epochs, False, True, top_snps)
         fullAcc = np.array(accuracies)
 
         # Calculate stats
@@ -352,4 +351,4 @@ if __name__=="__main__":
     '''If you want to run many iterations call the EvalScript function instead
     Make sure to change file name of experiment_notes.json after each run as it overwrites data currently
     (should prb change that)'''
-    main(422, 4, True, True)
+    main(422, 4, True, True, "Data/TopSNPs/chi2/top500_SNPs_chi2_binary.txt")

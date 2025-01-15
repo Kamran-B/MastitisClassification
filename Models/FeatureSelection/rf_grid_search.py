@@ -5,14 +5,14 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, f1_score
 from tqdm import tqdm
 
-def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="rf_results.txt"):
+def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random_state):
     # Define a grid of hyperparameters
     param_grid = {
         "n_estimators": [20],
         "min_samples_split": [10],
         "min_samples_leaf": [3],
         "max_depth": [15],
-        "random_state": [1, 2, 3, 4, 5,],
+        "random_state": [random_state],
     }
 
     mtry_fraction = 0.005  # Mtry as a fraction of the total number of predictors (0.005 seems to be best)
@@ -88,6 +88,9 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
     feature_importances = best_model.feature_importances_
     feature_importance_indices = np.argsort(feature_importances)[::-1]  # Sort in descending order
 
+    # Create a dictionary to store feature importances
+    feature_importance_dict = {}
+
     # Write classification report to rf_report.txt
     with open("rf_report.txt", "w") as report_file:
         report_file.write(f"Best Average F1 Score: {best_avg_f1_score:.4f}\n")
@@ -95,12 +98,19 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
         report_file.write("Classification Report:\n")
         report_file.write(report + "\n")
 
-    # Write feature importances to ranked_snps_rf.csv
+    # Write feature importances to ranked_snps_rf.csv and populate the dictionary
     with open("ranked_snps_rf.csv", mode="w", newline="") as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(["Feature", "Importance"])
 
         for idx in feature_importance_indices:
-            writer.writerow([f"Feature {idx}", f"{feature_importances[idx]:.6f}"])
+            importance = feature_importances[idx]
+            writer.writerow([f"Feature {idx}", f"{importance:.6f}"])
+            feature_importance_dict[idx] = importance
 
-    print("Results written to rf_report.txt and ranked_snps_rf.csv")
+    # Print the dictionary and confirm the output files
+    print(f"Results written to rf_report.txt and ranked_snps_rf.csv")
+    print("Feature Importance Dictionary:", feature_importance_dict)
+
+    # Return the dictionary
+    return feature_importance_dict
