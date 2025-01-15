@@ -16,6 +16,16 @@ TOP_PERFORMANCE_FILE = "top_performances.json"
 TOP_K = 10
 MODEL_SAVE_PATH = "Data/Saved Models/saved_models_distil_transformer"
 
+
+def get_top_500_snp_ids(file_path):
+    df = pd.read_csv(file_path)
+    top_500 = df.head(500)
+
+    sorted_snp_ids = top_500['SNP'].str.replace('SNP_', '').sort_values().tolist()
+    snp_indices = [int(snp_id) for snp_id in sorted_snp_ids]
+    return snp_indices
+
+
 def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     torch.cuda.empty_cache()
 
@@ -32,14 +42,20 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
         os.makedirs(MODEL_SAVE_PATH)
 
     # Create variables
-    breed_herd_year = '../Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
-    top_4000_snps_binary = '../Data/TopSNPs/top_200_SNPs_binary.txt'
-    phenotypes = '../Data/Phenotypes/phenotypes_sorted.txt'
+    breed_herd_year = '../../Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
+    top_4000_snps_binary = '../../Data/output_hd_exclude_binary_herd.txt'
+    phenotypes = '../../Data/Phenotypes/phenotypes_sorted_herd.txt'
+
+    top500 = get_top_500_snp_ids('../../SNPLists/ranked_snps_MI.csv')
 
     # Load data from files
     herd = load_2d_array_from_file(breed_herd_year)
-    X = bit_reader(top_4000_snps_binary)
+    X = np.array(bit_reader(top_4000_snps_binary))
     y = load_1d_array_from_file(phenotypes)
+
+    snp_indices = [index for index in top500 if index < len(X[0])]
+    print(snp_indices)
+    X = X[:, snp_indices].tolist()
 
     # Combine herd data with X
     for rowX, rowH in zip(X, herd):
