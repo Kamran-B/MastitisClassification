@@ -7,10 +7,10 @@ from tqdm import tqdm
 def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="rf_results.txt"):
     # Define a grid of hyperparameters
     param_grid = {
-        "n_estimators": [30, 50],
-        "min_samples_split": [10],
-        "min_samples_leaf": [3],
-        "max_depth": [15],
+        "n_estimators": [25, 30, 35],
+        "min_samples_split": [9, 10, 11],
+        "min_samples_leaf": [2, 3, 4],
+        "max_depth": [14, 15, 16],
     }
 
     mtry_fraction = 0.005  # Mtry as a fraction of the total number of predictors (0.005 seems to be best)
