@@ -4,7 +4,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, f1_score
 from tqdm import tqdm
 
-
 def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="rf_results.txt"):
     # Define a grid of hyperparameters
     param_grid = {
@@ -28,7 +27,7 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
         param_grid["max_depth"],
     ))
 
-    best_f1_score = 0
+    best_avg_f1_score = 0
     best_params = None
     best_model = None
 
@@ -48,11 +47,11 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
             oob_score=True,
             n_jobs=-1,
             #criterion='entropy',  # Experiment with this
-            max_samples=0.9,  # Optional to try different sample sizes
+            #max_samples=0.9,  # Optional to try different sample sizes
             #min_impurity_decrease=0.001,  # To avoid overfitting
             #max_leaf_nodes=100,  # Limit number of leaf nodes
             #warm_start=True,  # Optionally keep adding trees
-            bootstrap=True  # Use bootstrap sampling (default)
+            #avg f1 scorebootstrap=True  # Use bootstrap sampling (default)
         )
 
         # Train the model
@@ -61,10 +60,16 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
         # Make predictions on the test set
         y_pred = random_forest_model.predict(X_test)
 
-        # Evaluate the model
-        f1 = f1_score(y_test, y_pred, average="weighted")  # Use F1 score instead
-        if f1 > best_f1_score:
-            best_f1_score = f1
+        # Evaluate the F1 score for each class (majority and minority)
+        f1_majority = f1_score(y_test, y_pred, pos_label=0)  # Majority class (0)
+        f1_minority = f1_score(y_test, y_pred, pos_label=1)  # Minority class (1)
+
+        # Average F1 score between the majority and minority class
+        avg_f1_score = (f1_majority + f1_minority) / 2
+
+        # Update the best model if necessary
+        if avg_f1_score > best_avg_f1_score:
+            best_avg_f1_score = avg_f1_score
             best_params = params
             best_model = random_forest_model
 
@@ -82,7 +87,7 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
 
     # Write results to the output file
     with open(output_file, "w") as file:
-        file.write(f"Best F1 Score: {best_f1_score:.4f}\n")
+        file.write(f"Best Average F1 Score: {best_avg_f1_score:.4f}\n")
         file.write(f"Best Parameters: {best_params}\n\n")
         file.write("Classification Report:\n")
         file.write(report + "\n")
