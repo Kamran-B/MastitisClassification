@@ -33,8 +33,8 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
     # Create variables
     breed_herd_year = '../Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
-    top_4000_snps_binary = '../Data/TopSNPs/top_4000_SNPs_binary.txt'
-    phenotypes = '../Data/Phenotypes/phenotypes_sorted_herd.txt'
+    top_4000_snps_binary = '../Data/TopSNPs/top_200_SNPs_binary.txt'
+    phenotypes = '../Data/Phenotypes/phenotypes_sorted.txt'
 
     # Load data from files
     herd = load_2d_array_from_file(breed_herd_year)
@@ -115,10 +115,10 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
             self.classifier = nn.Linear(hidden_dim, num_labels)
 
             # Fully connected layer
-            self.fc = nn.Linear(self.bert.config.hidden_size + 2 * embedding_dim, hidden_dim)
-
+            self.fc = nn.Linear(self.bert.config.hidden_size, hidden_dim)
+            '''+ 2 * embedding_dim'''
             # Dropout for regularization
-            self.dropout = nn.Dropout(0.1)
+            self.dropout = nn.Dropout(0.2)
 
             # Breed and herd year embeddings
             self.breed_embedding = nn.Embedding(num_embeddings=10, embedding_dim=embedding_dim)
@@ -137,14 +137,14 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
             # Combine all features
             combined_features = torch.cat((pooled_output, breed_embeds, herd_year_embeds), dim=-1)
-            hidden_output = self.fc(self.dropout(combined_features))
+            hidden_output = self.fc(self.dropout(pooled_output))
             logits = self.classifier(hidden_output)
 
             return logits
 
 
     # Define the tokenizer
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
 
     # Prepare data loaders
     train_dataset = GeneticDataset(
@@ -158,22 +158,22 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
         tokenizer=tokenizer,
     )
 
-    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=12, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=12, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
     # Load the BERT model for classification (or use a custom model)
     model = CustomBERTModel(
-        embedding_dim=16,  # Dimension of SNP and impact embeddings
-        hidden_dim=64,  # Dimension of the hidden layer
+        embedding_dim=8,  # Dimension of SNP and impact embeddings
+        hidden_dim=128,  # Dimension of the hidden layer
         num_labels=2  # Binary classification
     )
     model.to(device)
 
     # Define the optimizer
-    optimizer = AdamW(model.parameters(), lr=2e-5)
+    optimizer = AdamW(model.parameters(), lr=2e-4)
     scaler = torch.cuda.amp.GradScaler()  # Initialize gradient scaler for mixed precision
 
     '''# Learning rate scheduler
