@@ -9,6 +9,8 @@ from DataQuality.funtional_consequences import *
 from DataQuality.to_array import bit_reader
 from DataQuality.model_saving import *
 import warnings
+from sklearn.exceptions import UndefinedMetricWarning
+
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 
