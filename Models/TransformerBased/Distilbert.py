@@ -43,7 +43,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
 
     # Create variables
     breed_herd_year = 'Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
-    phenotypes = 'Data/Phenotypes/phenotypes_sorted_herd.txt'
+    phenotypes = 'Data/Phenotypes/phenotypes_sorted.txt'
 
     #top500 = get_top_500_snp_ids('../../SNPLists/ranked_snps_MI.csv')
 
