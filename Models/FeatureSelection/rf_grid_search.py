@@ -1,8 +1,10 @@
 import itertools
 import numpy as np
-from imblearn.ensemble import BalancedRandomForestClassifier  # Import the balanced random forest classifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import classification_report, f1_score
 from tqdm import tqdm
+
 
 def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output_file="rf_results.txt"):
     # Define a grid of hyperparameters
@@ -35,33 +37,36 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
     for params in tqdm(param_combinations, desc="Training models"):
         n_estimators, min_samples_split, min_samples_leaf, max_depth = params
 
-        # Create a BalancedRandomForestClassifier with the current hyperparameters
-        balanced_rf_model = BalancedRandomForestClassifier(
+        # Create a RandomForestClassifier with the current hyperparameters
+        random_forest_model = RandomForestClassifier(
             n_estimators=n_estimators,
             max_features=mtry,
             min_samples_split=min_samples_split,
             min_samples_leaf=min_samples_leaf,
             max_depth=max_depth,
             random_state=42,
-            class_weight={0: 1, 1: 4000},  # Adjust class weights as needed
+            class_weight={0: 1, 1: 4000},
             oob_score=True,
             n_jobs=-1,
-            max_samples=0.9,  # Optional to try different sample sizes
             bootstrap=True  # Use bootstrap sampling (default)
         )
 
         # Train the model
-        balanced_rf_model.fit(X_train_augmented, y_train_augmented)
+        random_forest_model.fit(X_train_augmented, y_train_augmented)
+
+        # Calibrate the model using CalibratedClassifierCV (Platt Scaling)
+        calibrated_model = CalibratedClassifierCV(random_forest_model, method='sigmoid', cv='prefit')
+        calibrated_model.fit(X_train_augmented, y_train_augmented)
 
         # Make predictions on the test set
-        y_pred = balanced_rf_model.predict(X_test)
+        y_pred = calibrated_model.predict(X_test)
 
         # Evaluate the model
         f1 = f1_score(y_test, y_pred, average="weighted")  # Use F1 score instead
         if f1 > best_f1_score:
             best_f1_score = f1
             best_params = params
-            best_model = balanced_rf_model
+            best_model = calibrated_model
 
     # Generate a classification report for the best model
     y_pred_best = best_model.predict(X_test)
@@ -72,7 +77,7 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
     )
 
     # Get feature importance scores from the best model
-    feature_importances = best_model.feature_importances_
+    feature_importances = best_model.base_estimator_.feature_importances_  # Accessing the base RandomForest model's feature importances
     feature_importance_indices = np.argsort(feature_importances)[::-1]  # Sort in descending order
 
     # Write results to the output file
