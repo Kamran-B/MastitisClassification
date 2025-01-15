@@ -355,4 +355,5 @@ if __name__ == "__main__":
     EvalScript("Data/TopSNPs/chi2/top500_SNPs_chi2_binary.txt", "Logging/Transformer/chi2_top500.json")
     EvalScript("Data/TopSNPs/MutualInfo/top500_SNPs_mi_binary.txt", "Logging/Transformer/mi_top500.json")
     EvalScript("Data/TopSNPs/PCA/top500_SNPs_pca_binary.txt", "Logging/Transformer/pca_top500.json")
-    EvalScript("Data/TopSNPs/rf/top500_SNPs_rf_binary.txt", "Logging/Transformer/rf_top500.json")
+    EvalScript("Data/TopSNPs/rf/top500_SNPs_rf_binary.txt", "Logging/Transformer/new_rf_top500.json")
+    EvalScript("Data/TopSNPs/rf/top500_SNPs_og_rf_binary.txt", "Logging/Transformer/og_rf_top500.json")
