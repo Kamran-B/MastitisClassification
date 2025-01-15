@@ -352,7 +352,7 @@ if __name__=="__main__":
     Make sure to change file name of experiment_notes.json after each run as it overwrites data currently
     (should prb change that)'''
     #main(422, 4, True, True, "Data/TopSNPs/chi2/top500_SNPs_chi2_binary.txt")
-    EvalScript("Data/TopSNPs/chi2/top500_SNPs_chi2_binary.txt", "Logging/Transformer/chi2_top500")
-    EvalScript("Data/TopSNPs/MutualInfo/top500_SNPs_mi_binary.txt", "Logging/Transformer/mi_top500")
-    EvalScript("Data/TopSNPs/PCA/top500_SNPs_pca_binary.txt", "Logging/Transformer/pca_top500")
-    EvalScript("Data/TopSNPs/rf/top500_SNPs_rf_binary.txt", "Logging/Transformer/rf_top500")
+    EvalScript("Data/TopSNPs/chi2/top500_SNPs_chi2_binary.txt", "Logging/Transformer/chi2_top500.json")
+    EvalScript("Data/TopSNPs/MutualInfo/top500_SNPs_mi_binary.txt", "Logging/Transformer/mi_top500.json")
+    EvalScript("Data/TopSNPs/PCA/top500_SNPs_pca_binary.txt", "Logging/Transformer/pca_top500.json")
+    EvalScript("Data/TopSNPs/rf/top500_SNPs_rf_binary.txt", "Logging/Transformer/rf_top500.json")
