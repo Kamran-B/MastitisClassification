@@ -49,7 +49,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
 
     # Load data from files
     herd = load_2d_array_from_file(breed_herd_year)
-    X = np.array(bit_reader(top_snps))
+    X = bit_reader(top_snps)
     y = load_1d_array_from_file(phenotypes)
 
     # snp_indices = [index for index in top500 if index < len(X[0])]
