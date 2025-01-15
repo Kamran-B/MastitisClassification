@@ -8,6 +8,9 @@ from transformers import BertModel, BertTokenizer, DistilBertTokenizer, DistilBe
 from DataQuality.funtional_consequences import *
 from DataQuality.to_array import bit_reader
 from DataQuality.model_saving import *
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
@@ -59,7 +62,6 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
     # Combine herd data with X
     for rowX, rowH in zip(X, herd):
         rowX.extend(rowH)
-
 
     # Split data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(
@@ -120,7 +122,6 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
                 'labels': label
             }
 
-
     class CustomBERTModel(nn.Module):
         def __init__(self, embedding_dim, hidden_dim, num_labels=2):
             super(CustomBERTModel, self).__init__()
@@ -156,7 +157,6 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
             logits = self.classifier(hidden_output)
 
             return logits
-
 
     # Define the tokenizer
     tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
@@ -204,7 +204,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
     for epoch in range(epochs):
         model.train()
         total_loss = 0
-        i=0
+        i = 0
 
         for batch in train_loader:
             optimizer.zero_grad()
@@ -252,7 +252,8 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
                 true_labels.extend(batch['labels'].cpu().numpy())
 
         accuracy = accuracy_score(true_labels, preds)
-        report = classification_report(true_labels, preds, target_names=["No mastitis (Control)", "Mastitis Present (Case)"])
+        report = classification_report(true_labels, preds, target_names=["No mastitis (Control)", "Mastitis Present (Case)"], zero_division=1)
+
         conf_matrix = confusion_matrix(true_labels, preds)
 
         if printStats:
@@ -265,12 +266,10 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
             # torch.save(model.state_dict(), os.path.join(MODEL_SAVE_PATH, model_name))
             top_performances = load_top_performances(TOP_PERFORMANCE_FILE)
             if top_performances:
-                update_top_performances(top_performances, accuracy, model_name, report, TOP_K, MODEL_SAVE_PATH, TOP_PERFORMANCE_FILE)
+                update_top_performances(top_performances, accuracy, model_name, report, TOP_K, MODEL_SAVE_PATH,
+                                        TOP_PERFORMANCE_FILE)
 
     accuracies.append(accuracy)
-
-
-
 
 
 def EvalScript(top_snps, logging_file):
@@ -344,11 +343,7 @@ def EvalScript(top_snps, logging_file):
     print(f"Results saved to {logging_file}")
 
 
-
-
-
-
-if __name__=="__main__":
+if __name__ == "__main__":
     '''If you want to run many iterations call the EvalScript function instead
     Make sure to change file name of experiment_notes.json after each run as it overwrites data currently
     (should prb change that)'''
