@@ -272,7 +272,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
 
 
 
-def EvalScript(top_snps):
+def EvalScript(top_snps, logging_file):
     import random
     import numpy as np
     import json
@@ -337,10 +337,10 @@ def EvalScript(top_snps):
     }
 
     # Save to file
-    with open("experiment_notes.json", "w") as f:
+    with open(logging_file, "w") as f:
         json.dump(output, f, indent=4)
 
-    print("Results saved to experiment_notes.json")
+    print(f"Results saved to {logging_file}")
 
 
 
@@ -351,4 +351,8 @@ if __name__=="__main__":
     '''If you want to run many iterations call the EvalScript function instead
     Make sure to change file name of experiment_notes.json after each run as it overwrites data currently
     (should prb change that)'''
-    main(422, 4, True, True, "Data/TopSNPs/chi2/top500_SNPs_chi2_binary.txt")
+    #main(422, 4, True, True, "Data/TopSNPs/chi2/top500_SNPs_chi2_binary.txt")
+    EvalScript("Data/TopSNPs/chi2/top500_SNPs_chi2_binary.txt", "Logging/Transformer/chi2_top500")
+    EvalScript("Data/TopSNPs/MutualInfo/top500_SNPs_mi_binary.txt", "Logging/Transformer/mi_top500")
+    EvalScript("Data/TopSNPs/PCA/top500_SNPs_pca_binary.txt", "Logging/Transformer/pca_top500")
+    EvalScript("Data/TopSNPs/rf/top500_SNPs_rf_binary.txt", "Logging/Transformer/rf_top500")
