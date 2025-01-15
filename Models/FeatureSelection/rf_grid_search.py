@@ -1,7 +1,6 @@
 import itertools
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import classification_report, f1_score
 from tqdm import tqdm
 
@@ -48,25 +47,26 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
             class_weight={0: 1, 1: 4000},
             oob_score=True,
             n_jobs=-1,
+            #criterion='entropy',  # Experiment with this
+            max_samples=0.9,  # Optional to try different sample sizes
+            #min_impurity_decrease=0.001,  # To avoid overfitting
+            #max_leaf_nodes=100,  # Limit number of leaf nodes
+            #warm_start=True,  # Optionally keep adding trees
             bootstrap=True  # Use bootstrap sampling (default)
         )
 
         # Train the model
         random_forest_model.fit(X_train_augmented, y_train_augmented)
 
-        # Calibrate the model using CalibratedClassifierCV (Platt Scaling)
-        calibrated_model = CalibratedClassifierCV(random_forest_model, method='sigmoid', cv='prefit')
-        calibrated_model.fit(X_train_augmented, y_train_augmented)
-
         # Make predictions on the test set
-        y_pred = calibrated_model.predict(X_test)
+        y_pred = random_forest_model.predict(X_test)
 
         # Evaluate the model
         f1 = f1_score(y_test, y_pred, average="weighted")  # Use F1 score instead
         if f1 > best_f1_score:
             best_f1_score = f1
             best_params = params
-            best_model = calibrated_model
+            best_model = random_forest_model
 
     # Generate a classification report for the best model
     y_pred_best = best_model.predict(X_test)
@@ -76,8 +76,8 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, output
         target_names=["No mastitis (Control)", "Mastitis Present (Case)"],
     )
 
-    # Get feature importance scores from the best model's underlying RandomForest model
-    feature_importances = best_model.estimator.feature_importances_  # Accessing the base RandomForest model's feature importances
+    # Get feature importance scores from the best model
+    feature_importances = best_model.feature_importances_
     feature_importance_indices = np.argsort(feature_importances)[::-1]  # Sort in descending order
 
     # Write results to the output file
