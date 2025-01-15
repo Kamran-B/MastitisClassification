@@ -273,6 +273,8 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
 
     accuracies.append(accuracy)
 
+    return accuracies
+
 
 def EvalScript(top_snps, logging_file):
     import random
