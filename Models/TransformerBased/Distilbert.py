@@ -264,7 +264,8 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
             model_name = f"model_epoch{epoch}_acc{accuracy:.4f}.pt"
             # torch.save(model.state_dict(), os.path.join(MODEL_SAVE_PATH, model_name))
             top_performances = load_top_performances(TOP_PERFORMANCE_FILE)
-            update_top_performances(top_performances, accuracy, model_name, report, TOP_K, MODEL_SAVE_PATH, TOP_PERFORMANCE_FILE)
+            if top_performances:
+                update_top_performances(top_performances, accuracy, model_name, report, TOP_K, MODEL_SAVE_PATH, TOP_PERFORMANCE_FILE)
 
     accuracies.append(accuracy)
 
