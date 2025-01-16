@@ -40,7 +40,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
     random.seed(seed_value)
 
     torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.benchmark = True
 
     # Create directory for saving models if it doesn't exist
     if not os.path.exists(MODEL_SAVE_PATH):
@@ -65,45 +65,41 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
     for rowX, rowH in zip(X, herd):
         rowX.extend(rowH)
 
-    # Split data into training and testing sets
+    # Replace lists with NumPy arrays
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=seed_value
+        np.array(X), np.array(y), test_size=0.2, random_state=seed_value
     )
-    del X, y
 
-    # Augment training data
-    X_train_augmented = X_train.copy()
-    y_train_augmented = y_train.copy()
-    duplicate_and_insert(
-        X_train, X_train_augmented, y_train, y_train_augmented, 1, 16, seed=seed_value
-    )
-    del X_train, y_train
+    # Efficient augmentation using NumPy repeat
+    X_train_augmented = np.repeat(X_train, 16, axis=0)
+    y_train_augmented = np.repeat(y_train, 16, axis=0)
 
-    # Augment testing data
-    X_test_augmented = X_test.copy()
-    y_test_augmented = y_test.copy()
-    duplicate_and_insert(
-        X_test, X_test_augmented, y_test, y_test_augmented, 1, 16, seed=seed_value
-    )
-    del X_test, y_test
+    X_test_augmented = np.repeat(X_test, 16, axis=0)
+    y_test_augmented = np.repeat(y_test, 16, axis=0)
+
+    # Convert to PyTorch tensors
+    X_train_tensor = torch.tensor(X_train_augmented, dtype=torch.float32)
+    y_train_tensor = torch.tensor(y_train_augmented, dtype=torch.long)
+    X_test_tensor = torch.tensor(X_test_augmented, dtype=torch.float32)
+    y_test_tensor = torch.tensor(y_test_augmented, dtype=torch.long)
 
     # Define the tokenizer
     tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
 
     # Prepare data loaders
     train_dataset = GeneticDataset(
-        [snp_seq for snp_seq in X_train_augmented],
-        y_train_augmented,
+        [snp_seq for snp_seq in X_train_tensor],
+        y_train_tensor,
         tokenizer=tokenizer,
     )
     test_dataset = GeneticDataset(
-        [snp_seq for snp_seq in X_test_augmented],
-        y_test_augmented,
+        [snp_seq for snp_seq in X_test_tensor],
+        y_test_tensor,
         tokenizer=tokenizer,
     )
 
-    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=8, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=8, shuffle=False, pin_memory=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
