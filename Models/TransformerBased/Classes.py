@@ -7,20 +7,8 @@ from transformers import DistilBertTokenizer
 
 class GeneticDataset(Dataset):
     def __init__(self, snp_sequences, labels, tokenizer, max_length=505):
-        # Store preprocessed SNP sequences as tensors
-        self.snp_sequences = [
-            (
-                torch.tensor(seq[:-2], dtype=torch.long),  # SNP sequence
-                torch.tensor(seq[-2], dtype=torch.long),  # Breed
-                torch.tensor(seq[-1], dtype=torch.long)  # Herd Year
-            )
-            for seq in snp_sequences
-        ]
-
-        # Store labels as tensors
-        self.labels = torch.tensor(labels, dtype=torch.long)
-
-        # Save tokenizer and max length
+        self.snp_sequences = snp_sequences
+        self.labels = labels
         self.tokenizer = tokenizer
         self.max_length = max_length
 
@@ -28,14 +16,19 @@ class GeneticDataset(Dataset):
         return len(self.snp_sequences)
 
     def __getitem__(self, idx):
-        snp_sequence, breed, herd_year = self.snp_sequences[idx]
-        label = self.labels[idx]
+        snp_sequence = self.snp_sequences[idx][:-2]
+        breed = self.snp_sequences[idx][-2]
+        herd_year = self.snp_sequences[idx][-1]
 
-        # Tokenize SNP sequence into chunks
+        # Tokenize SNP and impact sequences into chunks
         snp_chunks = [
             " ".join(map(str, snp_sequence[i:i + self.max_length]))
             for i in range(0, len(snp_sequence), self.max_length)
         ]
+
+        label = torch.tensor(self.labels[idx])
+        breed = torch.tensor(breed, dtype=torch.long)
+        herd_year = torch.tensor(herd_year, dtype=torch.long)
 
         return {
             'snp_chunks': snp_chunks,
