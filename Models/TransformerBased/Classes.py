@@ -7,8 +7,20 @@ from transformers import DistilBertTokenizer
 
 class GeneticDataset(Dataset):
     def __init__(self, snp_sequences, labels, tokenizer, max_length=505):
-        self.snp_sequences = snp_sequences
-        self.labels = labels
+        # Store preprocessed SNP sequences as tensors
+        self.snp_sequences = [
+            (
+                torch.tensor(seq[:-2], dtype=torch.long),  # SNP sequence
+                torch.tensor(seq[-2], dtype=torch.long),  # Breed
+                torch.tensor(seq[-1], dtype=torch.long)  # Herd Year
+            )
+            for seq in snp_sequences
+        ]
+
+        # Store labels as tensors
+        self.labels = torch.tensor(labels, dtype=torch.long)
+
+        # Save tokenizer and max length
         self.tokenizer = tokenizer
         self.max_length = max_length
 
@@ -16,19 +28,14 @@ class GeneticDataset(Dataset):
         return len(self.snp_sequences)
 
     def __getitem__(self, idx):
-        snp_sequence = self.snp_sequences[idx][:-2]
-        breed = self.snp_sequences[idx][-2]
-        herd_year = self.snp_sequences[idx][-1]
+        snp_sequence, breed, herd_year = self.snp_sequences[idx]
+        label = self.labels[idx]
 
-        # Tokenize SNP and impact sequences into chunks
+        # Tokenize SNP sequence into chunks
         snp_chunks = [
             " ".join(map(str, snp_sequence[i:i + self.max_length]))
             for i in range(0, len(snp_sequence), self.max_length)
         ]
-
-        label = torch.tensor(self.labels[idx])
-        breed = torch.tensor(breed, dtype=torch.long)
-        herd_year = torch.tensor(herd_year, dtype=torch.long)
 
         return {
             'snp_chunks': snp_chunks,
@@ -89,7 +96,7 @@ class CustomBERTModel(nn.Module):
         # Combine all features
         combined_features = torch.cat((snp_pooled_avg, breed_embeds, herd_year_embeds),
                                       dim=-1)  # (batch_size, combined_dim)
-        combined_features = self.layer_norm(combined_features)
+        #combined_features = self.layer_norm(combined_features)
         hidden_output = self.fc(self.dropout(combined_features))  # (batch_size, hidden_dim)
         logits = self.classifier(hidden_output)  # (batch_size, num_labels)
 
