@@ -2,6 +2,7 @@ from torch.utils.data import Dataset
 import torch
 from torch import nn
 from transformers import DistilBertModel
+from transformers import DistilBertTokenizer
 
 
 class GeneticDataset(Dataset):
@@ -41,6 +42,7 @@ class CustomBERTModel(nn.Module):
     def __init__(self, embedding_dim, hidden_dim, num_labels=2):
         super(CustomBERTModel, self).__init__()
         self.bert = DistilBertModel.from_pretrained("distilbert-base-uncased")
+        self.tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
         self.max_length = 512
 
         self.layer_norm = nn.LayerNorm(self.bert.config.hidden_size + 2 * embedding_dim)
