@@ -271,7 +271,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False, top_snps=None
                 update_top_performances(top_performances, accuracy, model_name, report, TOP_K, MODEL_SAVE_PATH,
                                         TOP_PERFORMANCE_FILE)
 
-    accuracies.append(accuracy)
+        accuracies.append(accuracy)
 
     return accuracies
 
