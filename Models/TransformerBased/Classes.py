@@ -58,7 +58,7 @@ class CustomBERTModel(nn.Module):
         self.breed_embedding = nn.Embedding(num_embeddings=10, embedding_dim=embedding_dim)
         self.herd_year_embedding = nn.Embedding(num_embeddings=40, embedding_dim=embedding_dim)
 
-    def forward(self, snp_chunks, attention_mask, breed_ids, herd_year_ids):
+    def forward(self, snp_chunks, breed_ids, herd_year_ids):
         device = next(self.parameters()).device
 
         # Process SNP chunks in mini-batches
