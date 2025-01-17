@@ -18,6 +18,7 @@ os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 TOP_PERFORMANCE_FILE = "top_performances.json"
 MODEL_SAVE_PATH = "Data/Saved Models/saved_models_distil_transformer"
 
+torch.cuda.empty_cache()
 
 def get_top_500_snp_ids(file_path):
     df = pd.read_csv(file_path)
