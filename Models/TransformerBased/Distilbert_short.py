@@ -106,8 +106,8 @@ def main(seed=42, epochs=4, printStats=True, savePerf=False, top_snps=None):
     X_test_aug, y_test_aug = augment_data(X_test, y_test, seed)
 
     tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
-    train_loader = DataLoader(GeneticDataset(X_train_aug, y_train_aug, tokenizer), batch_size=24, shuffle=True)
-    test_loader = DataLoader(GeneticDataset(X_test_aug, y_test_aug, tokenizer), batch_size=24, shuffle=False)
+    train_loader = DataLoader(GeneticDataset(X_train_aug, y_train_aug, tokenizer), batch_size=16, shuffle=True)
+    test_loader = DataLoader(GeneticDataset(X_test_aug, y_test_aug, tokenizer), batch_size=16, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = CustomBERTModel(embedding_dim=16, hidden_dim=128, num_labels=2).to(device)
