@@ -111,7 +111,7 @@ def main(seed=42, epochs=4, printStats=True, savePerf=False, top_snps=None):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = CustomBERTModel(embedding_dim=16, hidden_dim=128, num_labels=2).to(device)
-    optimizer = AdamW(model.parameters(), lr=2e-5)
+    optimizer = AdamW(model.parameters(), lr=2e-6)
     loss_fn = torch.nn.CrossEntropyLoss()
 
     top_performances = load_top_performances(TOP_PERFORMANCE_FILE) if savePerf else None
@@ -125,7 +125,7 @@ def EvalScript(iterations, top_snps, logging_file):
     for run_num in range(1, iterations):
         seed = random.randint(1, 1000)
         print(f"Running with seed: {seed}")
-        accuracies = main(epochs=1, printStats=False, savePerf=True, top_snps=top_snps)
+        accuracies = main(epochs=5, printStats=False, savePerf=True, top_snps=top_snps)
         results.append({
             "run_number": run_num, "seed": seed,
             "accuracies_per_epoch": accuracies,
