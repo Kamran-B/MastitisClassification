@@ -120,6 +120,7 @@ def main(seed=42, epochs=4, printStats=True, savePerf=False, top_snps=None):
 
 def EvalScript(iterations, top_snps, logging_file):
     results = []
+    iterations += 1
     for run_num in range(1, iterations):
         seed = random.randint(1, 1000)
         print(f"Running with seed: {seed}")
