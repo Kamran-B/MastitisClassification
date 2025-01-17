@@ -10,9 +10,6 @@ from DataQuality.model_saving import *
 from Models.TransformerBased.Classes import GeneticDataset, CustomBERTModel
 from sklearn.exceptions import UndefinedMetricWarning
 import warnings
-import random
-import numpy as np
-import os
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
@@ -35,7 +32,9 @@ def prepare_data(seed_value, top_snps):
     herd = load_2d_array_from_file(breed_herd_year)
     X = bit_reader(top_snps)
     y = load_1d_array_from_file(phenotypes)
-    return train_test_split(X, y, test_size=0.2, random_state=seed_value)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed_value)
+
+    return X_train, X_test, y_train, y_test
 
 
 def augment_data(X, y, seed_value):
@@ -52,7 +51,7 @@ def train_and_eval(model, device, train_loader, test_loader, optimizer, loss_fn,
         total_loss, total_correct, total_samples = 0, 0, 0
         for i, batch in enumerate(train_loader):
             optimizer.zero_grad()
-            outputs = model(batch['snp_chunks'].to(device), batch['breed'].to(device), batch['herd_year'].to(device))
+            outputs = model(batch['snp_chunks'], batch['breed'].to(device), batch['herd_year'].to(device))
             loss = loss_fn(outputs, batch['labels'].to(device))
             total_loss += loss.item()
 
@@ -72,7 +71,7 @@ def train_and_eval(model, device, train_loader, test_loader, optimizer, loss_fn,
         preds, true_labels = [], []
         with torch.no_grad():
             for batch in test_loader:
-                outputs = model(batch['snp_chunks'].to(device), batch['breed'].to(device), batch['herd_year'].to(device))
+                outputs = model(batch['snp_chunks'], batch['breed'].to(device), batch['herd_year'].to(device))
                 _, predicted = torch.max(outputs, 1)
                 preds.extend(predicted.cpu().numpy())
                 true_labels.extend(batch['labels'].cpu().numpy())
