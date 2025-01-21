@@ -12,6 +12,7 @@ from sklearn.exceptions import UndefinedMetricWarning
 import warnings
 
 warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
