@@ -33,7 +33,7 @@ def prepare_data(seed_value, top_snps):
     herd = load_2d_array_from_file(breed_herd_year)
     X = bit_reader(top_snps)
     y = load_1d_array_from_file(phenotypes)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed_value)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed_value, stratify=y)
 
     return X_train, X_test, y_train, y_test
 
