@@ -41,5 +41,5 @@ def load_and_plot_manhattan(csv_file):
 
 
 # Call the function with your CSV file
-csv_file = "top_features.csv"  # Replace with the path to your generated CSV file
+csv_file = "Data/TopSNPs/chi2/ranked_snps_chi_2.csv"  # Replace with the path to your generated CSV file
 load_and_plot_manhattan(csv_file)

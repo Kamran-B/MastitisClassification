@@ -3,13 +3,12 @@ from sklearn.feature_selection import chi2
 import csv
 
 
-def benjamini_hochberg(p_values, alpha=0.05):
+def benjamini_hochberg(p_values):
     """
     Apply Benjamini-Hochberg FDR correction to p-values.
 
     Args:
         p_values (numpy.ndarray): Array of p-values.
-        alpha (float): Desired False Discovery Rate threshold (default 0.05).
 
     Returns:
         numpy.ndarray: Adjusted p-values.
@@ -21,15 +20,12 @@ def benjamini_hochberg(p_values, alpha=0.05):
     for i in range(m):
         adjusted_p_values[i] = p_values_sorted[i] * m / (i + 1)
 
-    # Ensure the adjusted p-values are less than or equal to alpha
-    #adjusted_p_values = np.minimum(adjusted_p_values, alpha)
-
     # Map back to the original order
     rank_order = np.argsort(p_values)
     return adjusted_p_values[np.argsort(rank_order)]
 
 
-def calculate_feature_importance(X, y, output_file="top_features.csv", batch_size=5000, alpha=0.05):
+def calculate_feature_importance(X, y, output_file="ranked_snps_chi_2_full.csv", batch_size=5000):
     """
     Calculate feature importance using Chi-squared scores and apply FDR control (Benjamini-Hochberg).
     Sort features by adjusted p-value (lowest FDR). Writes all features to a CSV.
@@ -39,7 +35,6 @@ def calculate_feature_importance(X, y, output_file="top_features.csv", batch_siz
         y (numpy.ndarray): Target vector (samples,).
         output_file (str): Path to the file where features will be written.
         batch_size (int): Number of features to process in each batch.
-        alpha (float): Desired False Discovery Rate threshold (default 0.05).
 
     Returns:
         None
@@ -67,7 +62,7 @@ def calculate_feature_importance(X, y, output_file="top_features.csv", batch_siz
 
     # Step 3: Apply Benjamini-Hochberg procedure to control FDR
     print("Applying Benjamini-Hochberg FDR correction...")
-    adjusted_p_values = benjamini_hochberg(chi2_p_values, alpha)
+    adjusted_p_values = benjamini_hochberg(chi2_p_values)
 
     # Step 4: Sort features by adjusted p-value (FDR)
     print("Sorting features by adjusted p-value (FDR)...")
