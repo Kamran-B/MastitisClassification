@@ -1,4 +1,5 @@
 /Data/
+/DataOld/
 saved_models/
 .idea
 Models/FeatureSelection/XGBoostFiles/

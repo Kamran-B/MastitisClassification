@@ -3,8 +3,12 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/Data" />
+      <excludeFolder url="file://$MODULE_DIR$/Models/saved_models" />
+      <excludeFolder url="file://$MODULE_DIR$/DataOld" />
+      <excludeFolder url="file://$MODULE_DIR$/Models/FeatureSelection/XGBoostFiles" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.10 (MastitisClassification)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.10" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

@@ -133,17 +133,11 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
                 encodings = {k: v.to(device) for k, v in encodings.items()}
 
                 # Forward pass through DistilBERT
-                def checkpointed_bert(encodings):
-                    return self.bert(**encodings, output_attentions=True)
-
-                outputs = checkpoint.checkpoint(checkpointed_bert, encodings)
-                attentions = outputs.attention
+                outputs = self.bert(**encodings)  # (batch_size, max_length, hidden_dim)
 
                 # Use the [CLS] token embedding (first token) as pooled output
                 cls_output = outputs.last_hidden_state[:, 0, :]  # (batch_size, hidden_dim)
                 snp_pooled_outputs.append(cls_output)
-                del encodings, outputs, cls_output
-                torch.cuda.empty_cache()
 
             # Average the pooled outputs from all chunks
             snp_pooled_avg = torch.mean(torch.stack(snp_pooled_outputs), dim=0)  # (batch_size, hidden_dim)
