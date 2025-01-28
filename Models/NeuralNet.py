@@ -61,7 +61,7 @@ def read_numbers_from_file(file_path):
     return numbers
 
 
-X = bit_reader("../Data/TopSNPs/top_200_SNPs_binary.txt")
+X = bit_reader("../Data/TopSNPs/Other/top_200_SNPs_binary.txt")
 y = read_numbers_from_file("../Data/Phenotypes/mast_lact1_sorted.txt")
 
 # Split the dataset into training and testing sets

@@ -398,5 +398,5 @@ def get_top_SNPs_xgb():
 #clean_raw_data()
 #get_top_SNPs_chi2()
 #get_top_SNPs_mi()
-#get_top_SNPs_pca()
-get_top_SNPs_xgb()
+get_top_SNPs_pca()
+#get_top_SNPs_xgb()
