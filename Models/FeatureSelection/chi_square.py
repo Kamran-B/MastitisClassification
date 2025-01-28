@@ -1,14 +1,6 @@
 import numpy as np
 from sklearn.feature_selection import chi2
-import os
-import psutil
 import csv
-
-
-def log_memory_usage(stage):
-    """Log current memory usage for debugging."""
-    process = psutil.Process(os.getpid())
-    print(f"[{stage}] Memory usage: {process.memory_info().rss / (1024 ** 2):.2f} MB")
 
 
 def benjamini_hochberg(p_values, alpha=0.05):
@@ -30,7 +22,7 @@ def benjamini_hochberg(p_values, alpha=0.05):
         adjusted_p_values[i] = p_values_sorted[i] * m / (i + 1)
 
     # Ensure the adjusted p-values are less than or equal to alpha
-    adjusted_p_values = np.minimum(adjusted_p_values, alpha)
+    #adjusted_p_values = np.minimum(adjusted_p_values, alpha)
 
     # Map back to the original order
     rank_order = np.argsort(p_values)
@@ -52,7 +44,6 @@ def calculate_feature_importance(X, y, output_file="top_features.csv", batch_siz
     Returns:
         None
     """
-    log_memory_usage("Start")
     # Ensure X and y are NumPy arrays
     X = np.array(X)
     y = np.array(y)
@@ -73,7 +64,6 @@ def calculate_feature_importance(X, y, output_file="top_features.csv", batch_siz
 
         # Log progress
         print(f"Processed features {start_idx + 1}-{end_idx}/{num_features}...")
-        log_memory_usage(f"After processing batch {start_idx // batch_size + 1}")
 
     # Step 3: Apply Benjamini-Hochberg procedure to control FDR
     print("Applying Benjamini-Hochberg FDR correction...")
@@ -94,4 +84,3 @@ def calculate_feature_importance(X, y, output_file="top_features.csv", batch_siz
                 print(f"Written feature {i + 1}/{len(sorted_indices)}")
 
     print(f"All features written to {output_file}")
-    log_memory_usage("End")
