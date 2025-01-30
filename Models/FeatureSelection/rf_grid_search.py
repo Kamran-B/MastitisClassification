@@ -92,7 +92,8 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random
     feature_importance_dict = {}
 
     # Write classification report to rf_report.txt
-    with open("rf_report.txt", "w") as report_file:
+    with open("rf_report.txt", "a") as report_file:
+        report_file.write("\n")
         report_file.write(f"Best Average F1 Score: {best_avg_f1_score:.4f}\n")
         report_file.write(f"Best Parameters: {best_params}\n\n")
         report_file.write("Classification Report:\n")
