@@ -92,7 +92,7 @@ def train_and_eval(model, device, train_loader, test_loader, optimizer, loss_fn,
     return accuracies
 
 
-def main(seed, epochs=4, printStats=True, savePerf=False, top_snps=None):
+def main(seed, epochs, printStats=True, savePerf=False, top_snps=None):
     torch.cuda.empty_cache()
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -126,7 +126,7 @@ def EvalScript(iterations, top_snps, logging_file):
     for run_num in range(1, iterations):
         seed = random.randint(1, 1000)
         print(f"Running with seed: {seed}")
-        accuracies = main(seed=seed, epochs=5, printStats=False, savePerf=True, top_snps=top_snps)
+        accuracies = main(seed=seed, epochs=1, printStats=False, savePerf=True, top_snps=top_snps)
         results.append({
             "run_number": run_num, "seed": seed,
             "accuracies_per_epoch": accuracies,
@@ -143,6 +143,4 @@ def EvalScript(iterations, top_snps, logging_file):
 
 
 if __name__ == "__main__":
-    EvalScript(5, "Data/TopSNPs/chi2/top500_SNPs_chi2_binary.txt", "Logging/Transformer/chi2_top500.json")
-    EvalScript(5, "Data/TopSNPs/rf/top500_SNPs_rf_binary.txt", "Logging/Transformer/new_rf_top500.json")
-    EvalScript(5, "Data/TopSNPs/rf/top500_SNPs_og_rf_binary.txt", "Logging/Transformer/og_rf_top500.json")
+    EvalScript(1, "Data/TopSNPs/chi2/top1000_SNPs_chi2_binary.txt", "Logging/Transformer/chi2_top1000.json")
