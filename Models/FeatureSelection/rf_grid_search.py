@@ -9,9 +9,9 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random
     # Define a grid of hyperparameters
     param_grid = {
         "n_estimators": [20],
-        "min_samples_split": [10],
-        "min_samples_leaf": [3],
-        "max_depth": [15],
+        "min_samples_split": [2],
+        "min_samples_leaf": [1],
+        "max_depth": [18],
         "random_state": [random_state],
     }
 
