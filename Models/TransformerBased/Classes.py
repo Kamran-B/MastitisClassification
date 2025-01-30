@@ -51,7 +51,7 @@ class CustomBERTModel(nn.Module):
         self.classifier = nn.Linear(hidden_dim, num_labels)
 
         # Fully connected layer
-        self.fc = nn.Linear(self.bert.config.hidden_size, hidden_dim)
+        self.fc = nn.Linear(self.bert.config.hidden_size + 2 * embedding_dim, hidden_dim)
 
         # Dropout for regularization
         self.dropout = nn.Dropout(0.1)
@@ -83,14 +83,14 @@ class CustomBERTModel(nn.Module):
         snp_pooled_avg = torch.mean(torch.stack(snp_pooled_outputs), dim=0)  # (batch_size, hidden_dim)
 
         # Embeddings for breed and herd year
-        '''breed_embeds = self.breed_embedding(breed_ids)  # (batch_size, embedding_dim)
-        herd_year_embeds = self.herd_year_embedding(herd_year_ids)  # (batch_size, embedding_dim)'''
+        breed_embeds = self.breed_embedding(breed_ids)  # (batch_size, embedding_dim)
+        herd_year_embeds = self.herd_year_embedding(herd_year_ids)  # (batch_size, embedding_dim)
 
         # Combine all features
-        '''combined_features = torch.cat((snp_pooled_avg, breed_embeds, herd_year_embeds),
-                                      dim=-1)  # (batch_size, combined_dim)'''
+        combined_features = torch.cat((snp_pooled_avg, breed_embeds, herd_year_embeds),
+                                      dim=-1)  # (batch_size, combined_dim)
         #combined_features = self.layer_norm(combined_features)
-        hidden_output = self.fc(self.dropout(snp_pooled_avg))  # (batch_size, hidden_dim)
+        hidden_output = self.fc(self.dropout(combined_features))  # (batch_size, hidden_dim)
         logits = self.classifier(hidden_output)  # (batch_size, num_labels)
 
         return logits

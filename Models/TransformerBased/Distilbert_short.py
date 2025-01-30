@@ -12,6 +12,7 @@ from sklearn.exceptions import UndefinedMetricWarning
 import warnings
 
 warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
@@ -65,7 +66,8 @@ def train_and_eval(model, device, train_loader, test_loader, optimizer, loss_fn,
                 print(f'Epoch: {epoch}, Batch {i}/{len(train_loader)}, Loss: {loss.item()}')
 
         avg_train_loss = total_loss / len(train_loader)
-        print(f"Epoch {epoch + 1}, Avg Loss: {avg_train_loss}")
+        train_accuracy = total_correct / total_samples * 100  # Percentage accuracy
+        print(f"Epoch {epoch + 1}, Avg Train Loss: {avg_train_loss}, Train Accuracy: {train_accuracy}%")
 
         model.eval()
         preds, true_labels = [], []
@@ -91,7 +93,7 @@ def train_and_eval(model, device, train_loader, test_loader, optimizer, loss_fn,
     return accuracies
 
 
-def main(seed=42, epochs=4, printStats=True, savePerf=False, top_snps=None):
+def main(seed, epochs, printStats=True, savePerf=False, top_snps=None):
     torch.cuda.empty_cache()
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -125,7 +127,7 @@ def EvalScript(iterations, top_snps, logging_file):
     for run_num in range(1, iterations):
         seed = random.randint(1, 1000)
         print(f"Running with seed: {seed}")
-        accuracies = main(epochs=5, printStats=False, savePerf=True, top_snps=top_snps)
+        accuracies = main(seed=seed, epochs=10, printStats=False, savePerf=True, top_snps=top_snps)
         results.append({
             "run_number": run_num, "seed": seed,
             "accuracies_per_epoch": accuracies,
@@ -142,4 +144,5 @@ def EvalScript(iterations, top_snps, logging_file):
 
 
 if __name__ == "__main__":
-    EvalScript(1, "Data/TopSNPs/Other/top_200_SNPs_binary.txt", "Logging/Transformer/oldRF_top200.json")
+    EvalScript(5, "Data/TopSNPs/MutualInfo/top100_SNPs_mi_binary.txt", "Logging/Transformer/mi_top100.json")
+    EvalScript(5, "Data/TopSNPs/xgboost/top100_SNPs_xgb_binary.txt", "Logging/Transformer/xgb_top100.json")
