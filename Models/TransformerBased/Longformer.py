@@ -32,7 +32,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     # Create variables
     breed_herd_year = 'Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
     top_4000_snps_binary = 'Data/TopSNPs/top_4000_SNPs_binary.txt'
-    phenotypes = 'Data/Phenotypes/phenotypes_sorted_herd_func_conseq.txt'
+    phenotypes = 'Data/Phenotypes/phenotypes_sorted_herd.txt'
 
     # Load data from files
     herd = load_2d_array_from_file(breed_herd_year)
@@ -138,7 +138,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
             return logits
 
     # Define the tokenizer
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    tokenizer = LongformerTokenizer.from_pretrained('allenai/longformer-base-4096')
 
     # Prepare data loaders
     train_dataset = GeneticDataset(
@@ -152,8 +152,8 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
         tokenizer=tokenizer,
     )
 
-    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=2, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")

@@ -31,8 +31,8 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
     # Create variables
     breed_herd_year = 'Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
-    top_4000_snps_binary = 'Data/TopSNPs/top_4000_SNPs_binary.txt'
-    phenotypes = 'Data/Phenotypes/phenotypes_sorted_herd_func_conseq.txt'
+    top_4000_snps_binary = 'Data/TopSNPs/top500_SNPs_og_rf_binary.txt'
+    phenotypes = 'Data/Phenotypes/phenotypes_sorted.txt'
 
     # Load data from files
     herd = load_2d_array_from_file(breed_herd_year)
@@ -65,7 +65,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
     # Custom Dataset for SNPs and Impact Scores
     class GeneticDataset(Dataset):
-        def __init__(self, snp_sequences, labels, tokenizer, max_length=512):
+        def __init__(self, snp_sequences, labels, tokenizer, max_length=256):
             self.snp_sequences = snp_sequences
             self.labels = labels
             self.tokenizer = tokenizer
@@ -156,8 +156,8 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
         tokenizer=tokenizer,
     )
 
-    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -252,4 +252,4 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     return accuracies
 
 if __name__=="__main__":
-    main(42, 4, True, False)
+    main(482, 8, True, False)
