@@ -365,6 +365,37 @@ def get_top_SNPs_rf():
     print("compressing significant SNPs to binary")
     to_binary(top500_SNPs_rf, top500_SNPs_rf_binary)
 
+def get_top_SNPs_Kevin():
+    # Top SNPs
+    top500_SNPs_pca = "Data/TopSNPs/PCA/top500_SNPs_Kevin.txt"
+    top500_SNPs_pca_binary = "Data/TopSNPs/PCA/top500_SNPs_Kevin_binary.txt"
+    top500_SNPs_pca_indices_file = "Data/TopSNPs/Kevin/ranked_snps_Kevin.csv"
+    raw_data_cleaned = "Data/RawData/raw_data_cleaned.txt"
+
+    # Load the first 500 rows of the first column as a list
+    top500_SNPs_pca_indices = (
+        pd.read_csv(top500_SNPs_Kevin_indices_file, nrows=500)["SNP"]
+        # .str.replace("SNP_", "", regex=False)  # Remove "SNP_"
+        # .astype(int)  # Convert to integers
+        .tolist()  # Convert to list
+    )
+
+    with open("pca_indices.txt", "w") as file:
+        for item in top500_SNPs_pca_indices:
+            file.write(f"{item}\n")
+
+    return
+
+    # filter raw_data by significant SNPs
+    print("filtering raw_data by significant SNPs")
+    extract_specified_columns(
+        raw_data_cleaned, top500_SNPs_pca, top500_SNPs_pca_indices
+    )
+
+    # compress top_snps to binary
+    print("compressing significant SNPs to binary")
+    to_binary(top500_SNPs_pca, top500_SNPs_pca_binary)
+
 def get_top_SNPs_xgb():
     # Top SNPs
     top500_SNPs_xgb = "Data/TopSNPs/xgboost/top500_SNPs_xgb.txt"
