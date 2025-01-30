@@ -1,4 +1,5 @@
 import csv
+import random
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -53,7 +54,7 @@ del X_train, y_train
 combined_feature_importance_dict = {}
 
 # Run the grid search with different random seeds and combine results
-seeds = [101, 202, 303, 404, 42]
+seeds = [random.randint(1, 1000) for _ in range(20)]
 for seed in seeds:
     result_dict = run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, seed)
 
@@ -68,7 +69,7 @@ for seed in seeds:
 sorted_feature_importance_dict = dict(sorted(combined_feature_importance_dict.items(), key=lambda item: item[1], reverse=True))
 
 # Write the sorted dictionary to a CSV file
-with open("combined_feature_importances.csv", mode="w", newline="") as csv_file:
+with open("combined_feature_importances_top_100.csv", mode="w", newline="") as csv_file:
     writer = csv.writer(csv_file)
     writer.writerow(["Feature", "Combined Importance"])
 
