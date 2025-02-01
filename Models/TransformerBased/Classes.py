@@ -3,12 +3,13 @@ import torch
 from torch import nn
 from transformers import DistilBertModel
 from transformers import DistilBertTokenizer
+import numpy as np
 
 
 class GeneticDataset(Dataset):
     def __init__(self, snp_sequences, labels, tokenizer, max_length=505):
-        self.snp_sequences = snp_sequences
-        self.labels = labels
+        self.snp_sequences = np.array(snp_sequences, dtype=np.int8)  # Use compact dtype
+        self.labels = np.array(labels, dtype=np.int8)  # Store labels as NumPy arrays
         self.tokenizer = tokenizer
         self.max_length = max_length
 
@@ -17,18 +18,18 @@ class GeneticDataset(Dataset):
 
     def __getitem__(self, idx):
         snp_sequence = self.snp_sequences[idx]
-        breed = self.snp_sequences[idx][-2]
-        herd_year = self.snp_sequences[idx][-1]
+        breed = snp_sequence[-2]  # Direct indexing
+        herd_year = snp_sequence[-1]
 
-        # Tokenize SNP and impact sequences into chunks
-        snp_chunks = [
-            " ".join(map(str, snp_sequence[i:i + self.max_length]))
-            for i in range(0, len(snp_sequence), self.max_length)
-        ]
-
-        label = torch.tensor(self.labels[idx])
+        # Convert to torch tensors efficiently
+        label = torch.tensor(self.labels[idx], dtype=torch.long)
         breed = torch.tensor(breed, dtype=torch.long)
         herd_year = torch.tensor(herd_year, dtype=torch.long)
+
+        # Tokenize in a more efficient way
+        snp_tensor = torch.from_numpy(snp_sequence[:-2])  # Exclude breed & herd_year
+        num_chunks = (len(snp_tensor) + self.max_length - 1) // self.max_length
+        snp_chunks = snp_tensor.split(self.max_length)  # Avoid string conversion
 
         return {
             'snp_chunks': snp_chunks,
