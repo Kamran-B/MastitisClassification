@@ -85,24 +85,36 @@ def duplicate_and_insert(
         seed=None,
 ):
     """
-    Duplicates elements from the original_list and efficiently appends them to the target_list.
+    Duplicates elements from the original_list and inserts them into the target_list
+    at random positions. Also updates the target_labels with the specified label_value.
+
+    Args:
+        original_list (list): The list of elements to duplicate.
+        target_list (list): The list where duplicated elements will be inserted.
+        original_target_labels (list): Labels corresponding to the elements in the original_list.
+        target_labels (list): Labels corresponding to the elements in the target_list.
+        label_value (any): The label value to assign to the duplicated elements in target_labels.
+        num_duplicates (int): The number of duplicates to create for each element with the specified label_value.
+        seed (int, optional): Seed for the random number generator to ensure reproducibility.
+
+    Returns:
+        None
     """
+    # Initialize the random number generator with the specified seed for reproducibility
     random.seed(seed)
 
-    new_elements = []
-    new_labels = []
-
+    # Iterate over each element in the original_list
     for d in range(len(original_list)):
+        # Check if the current element's label matches the specified label_value
         if original_target_labels[d] == label_value:
-            # Avoid unnecessary .copy() unless needed
-            element_copy = original_list[d].copy() if isinstance(original_list[d], (list, np.ndarray)) else original_list[d]
-            new_elements.extend([element_copy] * num_duplicates)
-            new_labels.extend([label_value] * num_duplicates)
-
-    # Append all new elements at once (avoiding O(n) insertions)
-    target_list.extend(new_elements)
-    target_labels.extend(new_labels)
-
+            # Duplicate the current element num_duplicates times
+            for j in range(num_duplicates):
+                # Generate a random position in the target_list to insert the duplicate
+                random_position = random.randint(0, len(target_list))
+                # Insert a copy of the current element into the target_list at the random position
+                target_list.insert(random_position, original_list[d].copy())
+                # Insert the label_value into the target_labels at the same random position
+                target_labels.insert(random_position, label_value)
 
 
 def left_join(left_df, right_df, join_col, fill_col, default_value=0):
