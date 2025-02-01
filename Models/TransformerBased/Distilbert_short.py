@@ -143,4 +143,4 @@ def EvalScript(iterations, top_snps, logging_file):
 
 
 if __name__ == "__main__":
-    EvalScript(1, "Data/TopSNPs/chi2/top5000_SNPs_chi2_binary.txt", "Logging/Transformer/chi2_top5000.json")
+    EvalScript(1, "Data/TopSNPs/chi2/top100_SNPs_chi2_binary.txt", "Logging/Transformer/chi2_top100.json")
