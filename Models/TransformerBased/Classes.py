@@ -28,8 +28,9 @@ class GeneticDataset(Dataset):
 
         # Tokenize in a more efficient way
         snp_tensor = torch.from_numpy(snp_sequence[:-2])  # Exclude breed & herd_year
-        num_chunks = (len(snp_tensor) + self.max_length - 1) // self.max_length
-        snp_chunks = snp_tensor.split(self.max_length)  # Avoid string conversion
+        snp_chunks = [
+            " ".join(map(str, chunk.tolist())) for chunk in snp_tensor.split(self.max_length)
+        ]
 
         return {
             'snp_chunks': snp_chunks,
