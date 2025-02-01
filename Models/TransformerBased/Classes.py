@@ -3,13 +3,12 @@ import torch
 from torch import nn
 from transformers import DistilBertModel
 from transformers import DistilBertTokenizer
-import numpy as np
 
 
 class GeneticDataset(Dataset):
     def __init__(self, snp_sequences, labels, tokenizer, max_length=505):
-        self.snp_sequences = np.array(snp_sequences, dtype=np.int8)  # Use compact dtype
-        self.labels = np.array(labels, dtype=np.int8)  # Store labels as NumPy arrays
+        self.snp_sequences = snp_sequences
+        self.labels = labels
         self.tokenizer = tokenizer
         self.max_length = max_length
 
@@ -18,26 +17,21 @@ class GeneticDataset(Dataset):
 
     def __getitem__(self, idx):
         snp_sequence = self.snp_sequences[idx]
-        breed = snp_sequence[-2]  # Direct indexing
-        herd_year = snp_sequence[-1]
+        breed, herd_year = snp_sequence[-2], snp_sequence[-1]
 
-        # Convert to torch tensors efficiently
-        label = torch.tensor(self.labels[idx], dtype=torch.long)
-        breed = torch.tensor(breed, dtype=torch.long)
-        herd_year = torch.tensor(herd_year, dtype=torch.long)
-
-        # Tokenize in a more efficient way
-        snp_tensor = torch.from_numpy(snp_sequence[:-2])  # Exclude breed & herd_year
-        snp_chunks = [
-            " ".join(map(str, chunk.tolist())) for chunk in snp_tensor.split(self.max_length)
-        ]
+        # Tokenize SNP and impact sequences into chunks (generator instead of list)
+        snp_chunks = (
+            " ".join(map(str, snp_sequence[i:i + self.max_length]))
+            for i in range(0, len(snp_sequence), self.max_length)
+        )
 
         return {
-            'snp_chunks': snp_chunks,
-            'breed': breed,
-            'herd_year': herd_year,
-            'labels': label
+            'snp_chunks': list(snp_chunks),  # Convert generator to list at return time
+            'breed': torch.tensor(breed, dtype=torch.int8),  # Use smaller dtype if applicable
+            'herd_year': torch.tensor(herd_year, dtype=torch.int16),  # Use smaller dtype if applicable
+            'labels': torch.tensor(self.labels[idx], dtype=torch.int8)  # Use smaller dtype if applicable
         }
+
 
 
 class CustomBERTModel(nn.Module):
