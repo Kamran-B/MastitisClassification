@@ -54,9 +54,13 @@ del X_train, y_train
 combined_feature_importance_dict = {}
 
 # Run the grid search with different random seeds and combine results
-seeds = [random.randint(1, 1000) for _ in range(20)]
+seeds = [random.randint(1, 1000) for _ in range(3)]
+reports = []
+
 for seed in seeds:
-    result_dict = run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, seed)
+    result_dict, report = run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, seed)
+
+    reports.append(report)
 
     # Add the feature importances to the combined dictionary
     for feature, importance in result_dict.items():
@@ -75,5 +79,15 @@ with open("combined_feature_importances_top_100.csv", mode="w", newline="") as c
 
     for feature, importance in sorted_feature_importance_dict.items():
         writer.writerow([f"Feature {feature}", f"{importance:.6f}"])
+
+reports.sort(key=lambda x: x["f1_score"], reverse=True)
+
+with open("rf_report.txt", "w") as report_file:
+    for entry in reports:
+        report_file.write("\n")
+        report_file.write(f"Best Average F1 Score: {entry['f1_score']:.4f}\n")
+        report_file.write(f"Best Parameters: {entry['params']}\n\n")
+        report_file.write("Classification Report:\n")
+        report_file.write(entry["report"] + "\n")
 
 print("Results written to combined_feature_importances.csv")

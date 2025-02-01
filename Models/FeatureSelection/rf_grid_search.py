@@ -91,22 +91,20 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random
     # Create a dictionary to store feature importances
     feature_importance_dict = {}
 
-    # Write classification report to rf_report.txt
-    with open("rf_report.txt", "a") as report_file:
-        report_file.write("\n")
-        report_file.write(f"Best Average F1 Score: {best_avg_f1_score:.4f}\n")
-        report_file.write(f"Best Parameters: {best_params}\n\n")
-        report_file.write("Classification Report:\n")
-        report_file.write(report + "\n")
+    full_report = {
+        "f1_score": best_avg_f1_score,
+        "params": best_params,
+        "report": report
+    }
 
     # Write feature importances to ranked_snps_rf.csv and populate the dictionary
     with open("ranked_snps_rf.csv", mode="w", newline="") as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(["Feature", "Importance"])
+        #writer = csv.writer(csv_file)
+        #writer.writerow(["Feature", "Importance"])
 
         for idx in feature_importance_indices:
             importance = feature_importances[idx]
-            writer.writerow([f"Feature {idx}", f"{importance:.6f}"])
+            #writer.writerow([f"Feature {idx}", f"{importance:.6f}"])
             feature_importance_dict[idx] = importance
 
     # Print the dictionary and confirm the output files
@@ -114,4 +112,4 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random
     print("Feature Importance Dictionary:", feature_importance_dict)
 
     # Return the dictionary
-    return feature_importance_dict
+    return feature_importance_dict, full_report
