@@ -17,19 +17,24 @@ class GeneticDataset(Dataset):
 
     def __getitem__(self, idx):
         snp_sequence = self.snp_sequences[idx]
-        breed, herd_year = snp_sequence[-2], snp_sequence[-1]
+        breed = self.snp_sequences[idx][-2]
+        herd_year = self.snp_sequences[idx][-1]
 
-        # Tokenize SNP and impact sequences into chunks (generator instead of list)
-        snp_chunks = (
+        # Tokenize SNP and impact sequences into chunks
+        snp_chunks = [
             " ".join(map(str, snp_sequence[i:i + self.max_length]))
             for i in range(0, len(snp_sequence), self.max_length)
-        )
+        ]
+
+        label = torch.tensor(self.labels[idx])
+        breed = torch.tensor(breed, dtype=torch.long)
+        herd_year = torch.tensor(herd_year, dtype=torch.long)
 
         return {
-            'snp_chunks': list(snp_chunks),  # Convert generator to list at return time
-            'breed': torch.tensor(breed, dtype=torch.int8),  # Use smaller dtype if applicable
-            'herd_year': torch.tensor(herd_year, dtype=torch.int16),  # Use smaller dtype if applicable
-            'labels': torch.tensor(self.labels[idx], dtype=torch.int8)  # Use smaller dtype if applicable
+            'snp_chunks': snp_chunks,
+            'breed': breed,
+            'herd_year': herd_year,
+            'labels': label
         }
 
 
