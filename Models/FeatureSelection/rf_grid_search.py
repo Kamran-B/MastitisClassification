@@ -48,7 +48,7 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random
             random_state=random_state,
             class_weight={0: 1, 1: 4000},
             oob_score=True,
-            n_jobs=-1,
+            n_jobs=8,
             #criterion='entropy',  # Experiment with this
             #max_samples=0.9,  # Optional to try different sample sizes
             #min_impurity_decrease=0.001,  # To avoid overfitting
