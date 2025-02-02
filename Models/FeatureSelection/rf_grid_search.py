@@ -4,8 +4,13 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, f1_score
 from tqdm import tqdm
+import gc
 
 def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random_state):
+
+    X_train_augmented = np.array(X_train_augmented, dtype=np.float32)
+    y_train_augmented = np.array(y_train_augmented, dtype=np.int8)
+
     # Define a grid of hyperparameters
     param_grid = {
         "n_estimators": [20],
@@ -22,20 +27,20 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random
     mtry = int(np.ceil(mtry_fraction * num_predictors))
 
     # Create all combinations of hyperparameters
-    param_combinations = list(itertools.product(
+    param_combinations = itertools.product(
         param_grid["n_estimators"],
         param_grid["min_samples_split"],
         param_grid["min_samples_leaf"],
         param_grid["max_depth"],
         param_grid["random_state"],
-    ))
+    )
 
     best_avg_f1_score = 0
     best_params = None
     best_model = None
 
     # Iterate over each combination of parameters with a progress bar
-    for params in tqdm(param_combinations, desc="Training models"):
+    for params in param_combinations:
         n_estimators, min_samples_split, min_samples_leaf, max_depth, random_state = params
 
         # Create a RandomForestClassifier with the current hyperparameters
@@ -47,8 +52,8 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random
             max_depth=max_depth,
             random_state=random_state,
             class_weight={0: 1, 1: 4000},
-            oob_score=True,
-            n_jobs=8,
+            oob_score=False,
+            n_jobs=-1,
             #criterion='entropy',  # Experiment with this
             #max_samples=0.9,  # Optional to try different sample sizes
             #min_impurity_decrease=0.001,  # To avoid overfitting
@@ -56,6 +61,8 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random
             #warm_start=True,  # Optionally keep adding trees
             #avg f1 scorebootstrap=True  # Use bootstrap sampling (default)
         )
+
+        gc.collect()
 
         # Train the model
         random_forest_model.fit(X_train_augmented, y_train_augmented)
