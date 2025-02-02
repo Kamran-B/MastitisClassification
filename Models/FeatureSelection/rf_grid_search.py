@@ -60,6 +60,8 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random
         # Train the model
         random_forest_model.fit(X_train_augmented, y_train_augmented)
 
+        print("done training")
+
         # Make predictions on the test set
         y_pred = random_forest_model.predict(X_test)
 
@@ -98,18 +100,18 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random
     }
 
     # Write feature importances to ranked_snps_rf.csv and populate the dictionary
-    with open("ranked_snps_rf.csv", mode="w", newline="") as csv_file:
+    #with open("ranked_snps_rf.csv", mode="w", newline="") as csv_file:
         #writer = csv.writer(csv_file)
         #writer.writerow(["Feature", "Importance"])
 
-        for idx in feature_importance_indices:
-            importance = feature_importances[idx]
+    for idx in feature_importance_indices:
+        importance = feature_importances[idx]
             #writer.writerow([f"Feature {idx}", f"{importance:.6f}"])
-            feature_importance_dict[idx] = importance
+        feature_importance_dict[idx] = importance
 
     # Print the dictionary and confirm the output files
-    print(f"Results written to rf_report.txt and ranked_snps_rf.csv")
-    print("Feature Importance Dictionary:", feature_importance_dict)
+    #print(f"Results written to rf_report.txt and ranked_snps_rf.csv")
+    #print("Feature Importance Dictionary:", feature_importance_dict)
 
     # Return the dictionary
     return feature_importance_dict, full_report
