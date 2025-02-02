@@ -54,7 +54,7 @@ del X_train, y_train
 combined_feature_importance_dict = {}
 
 # Run the grid search with different random seeds and combine results
-seeds = [random.randint(1, 1000) for _ in range(3)]
+seeds = [random.randint(1, 1000) for _ in range(40)]
 reports = []
 
 for seed in seeds:

@@ -106,7 +106,7 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random
         "report": report
     }
 
-    print(full_report)
+    print(full_report["f1_score"], random_state)
 
     # Write feature importances to ranked_snps_rf.csv and populate the dictionary
     #with open("ranked_snps_rf.csv", mode="w", newline="") as csv_file:
