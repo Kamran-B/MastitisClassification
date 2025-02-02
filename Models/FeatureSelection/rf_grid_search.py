@@ -52,7 +52,7 @@ def run_grid_search(X_train_augmented, y_train_augmented, X_test, y_test, random
             max_depth=max_depth,
             random_state=random_state,
             class_weight={0: 1, 1: 4000},
-            oob_score=False,
+            oob_score=True,
             n_jobs=-1,
             #criterion='entropy',  # Experiment with this
             #max_samples=0.9,  # Optional to try different sample sizes
