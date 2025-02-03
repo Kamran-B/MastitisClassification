@@ -65,7 +65,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
     # Custom Dataset for SNPs and Impact Scores
     class GeneticDataset(Dataset):
-        def __init__(self, snp_sequences, labels, tokenizer, max_length=256):
+        def __init__(self, snp_sequences, labels, tokenizer, max_length=510):
             self.snp_sequences = snp_sequences
             self.labels = labels
             self.tokenizer = tokenizer
@@ -123,7 +123,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
             # Process SNP chunks in mini-batches
             snp_pooled_outputs = []
             for chunk in snp_chunks:
-                encodings = self.tokenizer(chunk, padding="max_length", truncation=True, max_length=self.max_length,
+                encodings = self.tokenizer(chunk, padding="max_length", truncation=False, max_length=self.max_length,
                                            return_tensors="pt")
                 encodings = {k: v.to(device) for k, v in encodings.items()}
                 outputs = self.bert(**encodings)
@@ -156,8 +156,8 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
         tokenizer=tokenizer,
     )
 
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=8, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -252,4 +252,6 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     return accuracies
 
 if __name__=="__main__":
-    main(482, 8, True, False)
+    main(482, 5, True, False)
+    main(282, 5, True, False)
+
