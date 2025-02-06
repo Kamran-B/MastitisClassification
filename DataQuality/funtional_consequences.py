@@ -74,7 +74,63 @@ def extract_columns(file_path, columns, delimiter='|'):
 
     return result
 
+import numpy as np
+import random
 
+import numpy as np
+
+
+def duplicate_and_insert(
+        original_array,
+        target_array,
+        original_target_labels,
+        target_labels,
+        label_value,
+        num_duplicates,
+        seed=None,
+):
+    """
+    Duplicates elements from the original_array and inserts them into the target_array
+    at random positions. Also updates the target_labels with the specified label_value.
+
+    Because NumPy arrays are immutable in size, this function returns new arrays with the
+    duplicated elements inserted.
+
+    Args:
+        original_array (np.ndarray): Array of elements to duplicate.
+        target_array (np.ndarray): Array where duplicated elements will be inserted.
+        original_target_labels (np.ndarray): Labels corresponding to the elements in original_array.
+        target_labels (np.ndarray): Labels corresponding to the elements in target_array.
+        label_value (any): The label value to match in original_target_labels and to assign to the duplicated elements.
+        num_duplicates (int): Number of duplicates to create for each element with the specified label_value.
+        seed (int, optional): Seed for the random number generator to ensure reproducibility.
+
+    Returns:
+        tuple: A tuple (new_target_array, new_target_labels) where the duplicated elements and labels have been inserted.
+    """
+    # Initialize a NumPy random generator with the specified seed for reproducibility
+    rng = np.random.default_rng(seed)
+
+    # Iterate over each element in the original_array
+    for i in range(len(original_target_labels)):
+        # Check if the current element's label matches the specified label_value
+        if original_target_labels[i] == label_value:
+            # Duplicate the current element num_duplicates times
+            for _ in range(num_duplicates):
+                # Generate a random position in the new_target_array to insert the duplicate.
+                # rng.integers(low, high) returns an integer in the interval [low, high)
+                insert_position = rng.integers(0, len(target_array) + 1)
+                # Insert a copy of the element into the new_target_array.
+                # np.insert returns a new array with the value inserted.
+                target_array = np.insert(target_array, insert_position, original_array[i], axis=0)
+
+                # Insert the label_value into the new_target_labels at the same random position.
+                target_labels = np.insert(target_labels, insert_position, label_value, axis=0)
+
+    return target_array, target_labels
+
+
+'''
 def duplicate_and_insert(
         original_list,
         target_list,
@@ -115,7 +171,7 @@ def duplicate_and_insert(
                 target_list.insert(random_position, original_list[d].copy())
                 # Insert the label_value into the target_labels at the same random position
                 target_labels.insert(random_position, label_value)
-
+'''
 
 def left_join(left_df, right_df, join_col, fill_col, default_value=0):
     """

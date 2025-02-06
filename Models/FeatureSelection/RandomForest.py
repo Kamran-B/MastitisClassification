@@ -8,7 +8,7 @@ from DataQuality.to_array import bit_reader
 
 def main(seed_value=42, printStats=True, savePerf=False):
     top_4000_snps_binary = 'Data/output_hd_exclude_binary_herd.txt'
-    phenotypes = 'Data/Phenotypes/phenotypes_sorted_herd.txt'
+    phenotypes = 'Data/Phenotypes/phenotypes_sorted.txt'
 
     X = bit_reader(top_4000_snps_binary)
     y = load_1d_array_from_file(phenotypes)
@@ -18,23 +18,23 @@ def main(seed_value=42, printStats=True, savePerf=False):
         X, y, test_size=0.2, random_state=42
     )
 
-    X_train_augmented = X_train.copy()
-    y_train_augmented = y_train.copy()
-    duplicate_and_insert(
+    X_train_augmented = np.copy(X_train)
+    y_train_augmented = np.copy(y_train)
+    X_train_augmented, y_train_augmented = duplicate_and_insert(
         X_train, X_train_augmented, y_train, y_train_augmented, 1, 16, seed=seed_value
     )
 
     # Augment testing data
-    X_test_augmented = X_test.copy()
-    y_test_augmented = y_test.copy()
-    duplicate_and_insert(
+    X_test_augmented = np.copy(X_test)
+    y_test_augmented = np.copy(y_test)
+    X_test_augmented, y_test_augmented = duplicate_and_insert(
         X_test, X_test_augmented, y_test, y_test_augmented, 1, 16, seed=seed_value
     )
-    X_train_augmented = np.array(X_train_augmented, dtype=float)  # Ensure dtype is float
+    '''X_train_augmented = np.array(X_train_augmented, dtype=float)  # Ensure dtype is float
     y_train_augmented = np.array(y_train_augmented, dtype=int)
     X_test_augmented = np.array(X_test_augmented, dtype=float)
     y_test_augmented = np.array(y_test_augmented, dtype=int)
-
+'''
     # Set the parameters based on the research findings
     n_trees = 10  # Ntree
     mtry_fraction = 0.005  # Mtry as a fraction of the total number of predictors (0.005 seems to be best)
