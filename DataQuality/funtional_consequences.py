@@ -74,10 +74,8 @@ def extract_columns(file_path, columns, delimiter='|'):
 
     return result
 
-import numpy as np
 
-
-def duplicate_and_insert_fast(
+def duplicate_and_insert_numpy_fast(
         original_array,
         target_array,
         original_target_labels,
@@ -124,7 +122,7 @@ def duplicate_and_insert_fast(
     return new_target_array, new_target_labels
 
 
-def duplicate_and_insert(
+def duplicate_and_insert_memory_efficient(
         original_array,
         target_array,
         original_target_labels,
@@ -174,7 +172,7 @@ def duplicate_and_insert(
     return target_array, target_labels
 
 
-'''
+
 def duplicate_and_insert(
         original_list,
         target_list,
@@ -215,7 +213,7 @@ def duplicate_and_insert(
                 target_list.insert(random_position, original_list[d].copy())
                 # Insert the label_value into the target_labels at the same random position
                 target_labels.insert(random_position, label_value)
-'''
+
 
 def left_join(left_df, right_df, join_col, fill_col, default_value=0):
     """

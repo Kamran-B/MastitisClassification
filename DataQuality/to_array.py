@@ -7,7 +7,7 @@ import os
 import numpy as np
 from tqdm import tqdm
 
-def bit_reader(input_file, chunk_size=65536):
+def bit_reader_memory_efficient(input_file, chunk_size=65536):
     """
     Optimized bit reader that returns a 2D NumPy array with each row as a sequence.
     """
@@ -64,7 +64,7 @@ def bit_reader(input_file, chunk_size=65536):
         print(f"An error occurred: {e}")
         return np.array([], dtype=np.uint8)
 
-'''def bit_reader(input_file, chunk_size=500000):
+def bit_reader(input_file, chunk_size=500000):
     """
     Optimized bit reader for faster processing of binary files.
     """
@@ -117,4 +117,4 @@ def bit_reader(input_file, chunk_size=65536):
         print(f"File not found: {input_file}")
     except Exception as e:
         print(f"An error occurred: {e}")
-        return []'''
+        return []
