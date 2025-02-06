@@ -75,9 +75,53 @@ def extract_columns(file_path, columns, delimiter='|'):
     return result
 
 import numpy as np
-import random
 
-import numpy as np
+
+def duplicate_and_insert_fast(
+        original_array,
+        target_array,
+        original_target_labels,
+        target_labels,
+        label_value,
+        num_duplicates,
+        seed=None,
+):
+    """
+    Optimized function to duplicate elements and insert them into the target array with random positions.
+    """
+    rng = np.random.default_rng(seed)
+
+    # Identify elements to duplicate using a boolean mask for vectorization
+    mask = np.isclose(original_target_labels, label_value)  # Useful for floats
+    elements_to_insert = original_array[mask]
+
+    # If no elements to insert, return the original arrays
+    if len(elements_to_insert) == 0:
+        return target_array.copy(), target_labels.copy()
+
+    # Repeat each element num_duplicates times
+    elements_to_insert = np.repeat(elements_to_insert, num_duplicates, axis=0)
+    num_insertions = len(elements_to_insert)
+
+    # Generate random positions for each insertion
+    initial_length = len(target_array)
+    upper_bounds = initial_length + np.arange(num_insertions)
+    positions = rng.integers(0, upper_bounds)
+
+    # Convert target arrays to lists for efficient insertions
+    target_list = target_array.tolist()
+    label_list = target_labels.tolist()
+
+    # Insert elements and labels into the lists
+    for element, pos in zip(elements_to_insert, positions):
+        target_list.insert(pos, element)
+        label_list.insert(pos, label_value)
+
+    # Convert lists back to numpy arrays
+    new_target_array = np.array(target_list, dtype=np.uint8)
+    new_target_labels = np.array(label_list, dtype=np.uint8)
+
+    return new_target_array, new_target_labels
 
 
 def duplicate_and_insert(

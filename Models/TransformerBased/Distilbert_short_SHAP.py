@@ -155,7 +155,7 @@ def EvalScript(iterations, top_snps, logging_file):
     for run_num in range(1, iterations):
         seed = random.randint(1, 1000)
         print(f"Running with seed: {seed}")
-        accuracies = main(seed=seed, epochs=10, printStats=False, savePerf=True, top_snps=top_snps)
+        accuracies = main(seed=seed, epochs=5, printStats=False, savePerf=True, top_snps=top_snps)
         results.append({
             "run_number": run_num, "seed": seed,
             "accuracies_per_epoch": accuracies,
@@ -172,5 +172,5 @@ def EvalScript(iterations, top_snps, logging_file):
 
 
 if __name__ == "__main__":
-    EvalScript(5, "Data/TopSNPs/MutualInfo/top100_SNPs_mi_binary.txt", "Logging/Transformer/mi_top100.json")
+    EvalScript(1, "Data/TopSNPs/MutualInfo/top100_SNPs_mi_binary.txt", "Logging/Transformer/mi_top100.json")
     EvalScript(5, "Data/TopSNPs/xgboost/top100_SNPs_xgb_binary.txt", "Logging/Transformer/xgb_top100.json")
