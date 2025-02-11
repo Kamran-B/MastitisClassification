@@ -1,3 +1,5 @@
+import time
+
 import torch
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
@@ -127,7 +129,7 @@ def EvalScript(iterations, top_snps, logging_file):
     for run_num in range(1, iterations):
         seed = random.randint(1, 1000)
         print(f"Running with seed: {seed}")
-        accuracies = main(seed=seed, epochs=10, printStats=False, savePerf=True, top_snps=top_snps)
+        accuracies = main(seed=seed, epochs=3, printStats=False, savePerf=True, top_snps=top_snps)
         results.append({
             "run_number": run_num, "seed": seed,
             "accuracies_per_epoch": accuracies,
@@ -144,5 +146,11 @@ def EvalScript(iterations, top_snps, logging_file):
 
 
 if __name__ == "__main__":
-    EvalScript(5, "Data/TopSNPs/MutualInfo/top100_SNPs_mi_binary.txt", "Logging/Transformer/mi_top100.json")
-    EvalScript(5, "Data/TopSNPs/xgboost/top100_SNPs_xgb_binary.txt", "Logging/Transformer/xgb_top100.json")
+    start_time = time.time()  # Start timer
+    EvalScript(1, "Data/TopSNPs/MutualInfo/top100_SNPs_mi_binary.txt", "Logging/Transformer/mi_top100test.json")
+    end_time = time.time()  # End timer
+    elapsed_time = end_time - start_time
+
+    print(f"Elapsed time: {elapsed_time:.2f} seconds")
+
+

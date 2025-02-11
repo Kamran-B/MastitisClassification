@@ -272,14 +272,14 @@ def get_top_SNPs_chi2():
 
 def get_top_SNPs_mi():
     # Top SNPs
-    top500_SNPs_mi = "Data/TopSNPs/MutualInfo/top100_SNPs_mi.txt"
-    top500_SNPs_mi_binary = "Data/TopSNPs/MutualInfo/top100_SNPs_mi_binary.txt"
+    top500_SNPs_mi = "Data/TopSNPs/MutualInfo/top1000_SNPs_mi.txt"
+    top500_SNPs_mi_binary = "Data/TopSNPs/MutualInfo/top1000_SNPs_mi_binary.txt"
     top500_SNPs_mi_indices_file = "Data/TopSNPs/MutualInfo/ranked_snps_MI.csv"
     raw_data_cleaned = "Data/RawData/raw_data_cleaned.txt"
 
     # Load the first 500 rows of the first column as a list
     top500_SNPs_mi_indices = (
-        pd.read_csv(top500_SNPs_mi_indices_file, nrows=100)["SNP"]
+        pd.read_csv(top500_SNPs_mi_indices_file, nrows=1000)["SNP"]
         #.str.replace("SNP_", "", regex=False)  # Remove "SNP_"
         #.astype(int)  # Convert to integers
         .tolist()  # Convert to list
@@ -367,14 +367,14 @@ def get_top_SNPs_rf():
 
 def get_top_SNPs_Kevin():
     # Top SNPs
-    top500_SNPs_Kevin = "Data/TopSNPs/PCA/top500_SNPs_Kevin.txt"
-    top500_SNPs_Kevin_binary = "Data/TopSNPs/PCA/top500_SNPs_Kevin_binary.txt"
+    top500_SNPs_Kevin = "Data/TopSNPs/Kevin/top1000_SNPs_Kevin.txt"
+    top500_SNPs_Kevin_binary = "Data/TopSNPs/Kevin/top1000_SNPs_Kevin_binary.txt"
     top500_SNPs_Kevin_indices_file = "Data/TopSNPs/Kevin/ranked_snps_Kevin.csv"
     raw_data_cleaned = "Data/RawData/raw_data_cleaned.txt"
 
     # Load the first 500 rows of the first column as a list
     top500_SNPs_Kevin_indices = (
-        pd.read_csv(top500_SNPs_Kevin_indices_file, nrows=500)["SNP"]
+        pd.read_csv(top500_SNPs_Kevin_indices_file, nrows=1000)["SNP"]
         # .str.replace("SNP_", "", regex=False)  # Remove "SNP_"
         .astype(int)  # Convert to integers
         .tolist()  # Convert to list
@@ -397,14 +397,14 @@ def get_top_SNPs_Kevin():
 
 def get_top_SNPs_xgb():
     # Top SNPs
-    top500_SNPs_xgb = "Data/TopSNPs/xgboost/top100_SNPs_xgb.txt"
-    top500_SNPs_xgb_binary = "Data/TopSNPs/xgboost/top100_SNPs_xgb_binary.txt"
+    top500_SNPs_xgb = "Data/TopSNPs/xgboost/top4000_SNPs_xgb.txt"
+    top500_SNPs_xgb_binary = "Data/TopSNPs/xgboost/top4000_SNPs_xgb_binary.txt"
     top500_SNPs_xgb_indices_file = "Data/TopSNPs/xgboost/ranked_snps_xgb.csv"
     raw_data_cleaned = "Data/RawData/raw_data_cleaned.txt"
 
     # Load the first 500 rows of the first column as a list
     top500_SNPs_xgb_indices = (
-        pd.read_csv(top500_SNPs_xgb_indices_file, nrows=100)["SNP_Index"]
+        pd.read_csv(top500_SNPs_xgb_indices_file, nrows=4000)["SNP_Index"]
         #.str.replace("SNP_", "", regex=False)  # Remove "SNP_"
         #.astype(int)  # Convert to integers
         .tolist()  # Convert to list
@@ -429,5 +429,5 @@ def get_top_SNPs_xgb():
 #get_top_SNPs_chi2()
 #get_top_SNPs_mi()
 #get_top_SNPs_pca()
-#get_top_SNPs_xgb()
-get_top_SNPs_Kevin()
+get_top_SNPs_xgb()
+#get_top_SNPs_Kevin()

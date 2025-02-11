@@ -19,6 +19,7 @@ def rank_snps_by_mutual_information(X, y, snp_names=None):
     - ranked_snps: DataFrame with SNP names and their mutual information scores, sorted in descending order
     """
     # Compute mutual information scores
+    print("Running MI now")
     mi_scores = mutual_info_classif(X, y, discrete_features=True, random_state=42)
 
     # Create SNP names if not provided
@@ -37,7 +38,7 @@ if __name__ == "__main__":
     # Example dataset
     np.random.seed(42)
     X = np.array(bit_reader("Data/output_hd_exclude_binary_herd.txt"))
-    y = np.array(read_numbers_from_file("Data/Phenotypes/phenotypes_sorted_herd.txt"))
+    y = np.array(read_numbers_from_file("Data/Phenotypes/phenotypes_sorted.txt"))
     # Rank SNPs by mutual information
     ranked_snps = rank_snps_by_mutual_information(X, y)
     ranked_snps.to_csv("ranked_snps_MI.csv", index=False)

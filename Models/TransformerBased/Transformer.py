@@ -31,7 +31,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
     # Create variables
     breed_herd_year = 'Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
-    top_4000_snps_binary = 'Data/TopSNPs/top500_SNPs_og_rf_binary.txt'
+    top_4000_snps_binary = 'Data/TopSNPs/rf/top500_SNPs_rf_binary.txt'
     phenotypes = 'Data/Phenotypes/phenotypes_sorted.txt'
 
     # Load data from files
@@ -46,7 +46,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
 
     # Split data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=seed_value
+        X, y, test_size=0.2, random_state=seed_value,stratify=y
     )
 
     # Augment training data
@@ -187,6 +187,8 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     for epoch in range(epochs):
         model.train()
         total_loss = 0
+        total_correct = 0
+        total_samples = 0
         i = 0
         for batch in train_loader:
             optimizer.zero_grad()
@@ -202,6 +204,10 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
             loss = loss_fn(outputs, labels)
             total_loss += loss.item()
 
+            _, predicted = torch.max(outputs, 1)
+            total_correct += (predicted == labels).sum().item()
+            total_samples += labels.size(0)
+
             # Backward pass
             loss.backward()
             optimizer.step()
@@ -211,8 +217,9 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
                 print(f'Epoch: {epoch}, Batch {i}/{len(train_loader)}, Loss: {loss.item()}')
 
         avg_train_loss = total_loss / len(train_loader)
+        train_accuracy = total_correct / total_samples * 100  # Percentage accuracy
         if printStats:
-            print(f"Epoch {epoch + 1}, Avg Loss: {avg_train_loss}")
+            print(f"Epoch {epoch + 1}, Avg Train Loss: {avg_train_loss}, Train Accuracy: {train_accuracy}%")
 
         # Evaluation
         model.eval()
@@ -252,6 +259,7 @@ def main(seed_value=42, epochs=4, printStats=True, savePerf=False):
     return accuracies
 
 if __name__=="__main__":
-    main(482, 5, True, False)
-    main(282, 5, True, False)
+    main(282, 3, True, False)
+    main(782, 3, True, False)
+
 

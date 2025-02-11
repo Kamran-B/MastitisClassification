@@ -16,7 +16,7 @@ class GeneticDataset(Dataset):
         return len(self.snp_sequences)
 
     def __getitem__(self, idx):
-        snp_sequence = self.snp_sequences[idx][:-2]
+        snp_sequence = self.snp_sequences[idx]
         breed = self.snp_sequences[idx][-2]
         herd_year = self.snp_sequences[idx][-1]
 
@@ -51,7 +51,7 @@ class CustomBERTModel(nn.Module):
         self.classifier = nn.Linear(hidden_dim, num_labels)
 
         # Fully connected layer
-        self.fc = nn.Linear(self.bert.config.hidden_size + 2 * embedding_dim, hidden_dim)
+        self.fc = nn.Linear(self.bert.config.hidden_size, hidden_dim)
 
         # Dropout for regularization
         self.dropout = nn.Dropout(0.1)
@@ -90,7 +90,7 @@ class CustomBERTModel(nn.Module):
         combined_features = torch.cat((snp_pooled_avg, breed_embeds, herd_year_embeds),
                                       dim=-1)  # (batch_size, combined_dim)
         #combined_features = self.layer_norm(combined_features)
-        hidden_output = self.fc(self.dropout(combined_features))  # (batch_size, hidden_dim)
+        hidden_output = self.fc(self.dropout(snp_pooled_avg))  # (batch_size, hidden_dim)
         logits = self.classifier(hidden_output)  # (batch_size, num_labels)
 
         return logits
