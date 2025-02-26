@@ -1,16 +1,15 @@
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import Lasso
-from sklearn.preprocessing import StandardScaler
 from helper import read_numbers_from_file
-from DataQuality.to_array import bit_reader
+from DataQuality.to_array import *
 
 # Load dataset
-X = np.array(bit_reader("Data/output_hd_exclude_binary_herd.txt"))
-y = np.array(read_numbers_from_file("Data/Phenotypes/phenotypes_sorted.txt"))
+X = bit_reader_memory_efficient("Data/output_hd_exclude_binary_herd.txt")
+y = np.array(read_numbers_from_file("Data/Phenotypes/phenotypes_sorted.txt"), dtype=np.int8)
 
 # Fit Lasso model
-lasso = Lasso(alpha=0.0001)
+lasso = Lasso(alpha=0.0001, max_iter=100000, selection='random', random_state=42)
 lasso.fit(X, y)
 
 # Get feature importance (absolute values)
