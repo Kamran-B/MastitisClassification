@@ -32,7 +32,7 @@ class SNPDataset(Dataset):
 
 
 class SNPTransformer(nn.Module):
-    def __init__(self, input_dim=3, d_model=16, num_heads=2, num_layers=2, window_size=256, stride=240):
+    def __init__(self, input_dim=3, d_model=64, num_heads=4, num_layers=4, window_size=1024, stride=1000):
         super().__init__()
         self.window_size = window_size
         self.stride = stride
@@ -74,6 +74,7 @@ def train_model(model, train_loader, val_loader, epochs=8, lr=1e-5):
     criterion = torch.nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
     scaler = GradScaler()  # Gradient scaler for FP16 stability
+    accuracies = []
 
     for epoch in range(epochs):
         model.train()
@@ -99,7 +100,8 @@ def train_model(model, train_loader, val_loader, epochs=8, lr=1e-5):
             total_loss += loss.item()
 
         print(f"Epoch {epoch + 1}, Average Loss: {total_loss / len(train_loader)}")
-        evaluate_model(model, val_loader)  # Evaluate after training
+        accuracies.append(evaluate_model(model, val_loader))  # Evaluate after training
+    return accuracies
 
 
 
@@ -139,11 +141,12 @@ def evaluate_model(model, test_loader):
     print(f"Precision: {precision:.4f}")
     print(f"Recall: {recall:.4f}")
     print(f"AUC-ROC: {auc:.4f}")
+    return accuracy
 
 
 def prepare_data(seed_value, top_snps):
     breed_herd_year = 'Data/BreedHerdYear/breed_herdxyear_lact1_sorted.txt'
-    phenotypes = 'Data/Phenotypes/phenotypes_sorted.txt'
+    phenotypes = 'Data/Phenotypes/phenotypes_sorted_herd.txt'
 
     herd = load_2d_array_from_file(breed_herd_year)
     X = bit_reader(top_snps)
@@ -164,14 +167,16 @@ def main(seed, epochs, printStats=True, savePerf=False, top_snps=None):
 
     dataset = SNPDataset(X_train_aug, y_train_aug)
     dataset2 = SNPDataset(X_test_aug, y_test_aug)
-    train_loader = DataLoader(dataset, batch_size=1, shuffle=True)  # Adjust batch size as needed
-    val_loader = DataLoader(dataset2, batch_size=1
+    train_loader = DataLoader(dataset, batch_size=32, shuffle=True)  # Adjust batch size as needed
+    val_loader = DataLoader(dataset2, batch_size=32
                             , shuffle=False)
 
     model = SNPTransformer()
-    train_model(model, train_loader, val_loader)
+    accuracies = train_model(model, train_loader, val_loader)
     print("\nEvaluating model on test data...")
     evaluate_model(model, val_loader)  # Evaluate after training
+
+    return accuracies
 
 def EvalScript(iterations, top_snps, logging_file):
     results = []
@@ -197,7 +202,7 @@ def EvalScript(iterations, top_snps, logging_file):
 
 if __name__ == "__main__":
     start_time = time.time()  # Start timer
-    EvalScript(1, "DataOld/output_hd_exclude_binary_herd.txt", "Logging/Transformer/full.json")
+    EvalScript(5, "DataOld/output_hd_exclude_4000top_SNPs_binary.txt", "Logging/Transformer/full.json")
     end_time = time.time()  # End timer
     elapsed_time = end_time - start_time
 
