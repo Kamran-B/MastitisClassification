@@ -10,7 +10,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score, classification_rep
 from sklearn.model_selection import train_test_split
 from transformers import DistilBertTokenizer
 from DataQuality.funtional_consequences import *
-from DataQuality.to_array import bit_reader
+from DataQuality.to_array import bit_reader, bit_reader_memory_efficient
 from DataQuality.model_saving import *
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 os.environ['TORCH_USE_CUDA_DSA'] = "1"
@@ -83,7 +83,7 @@ def train_model(model, train_loader, val_loader, epochs=20, lr=6e-4):
         start_time = time.time()
 
         for snps, labels in train_loader:
-            snps, labels = snps.to(device), labels.to(device)
+            snps, labels = snps.to(device, non_blocking=True), labels.to(device, non_blocking=True)
 
             optimizer.zero_grad()
 
@@ -153,15 +153,17 @@ def prepare_data(seed_value, top_snps):
     phenotypes = 'Data/Phenotypes/phenotypes_sorted.txt'
 
     herd = load_2d_array_from_file(breed_herd_year)
-    X = bit_reader(top_snps)
+    X = bit_reader_memory_efficient(top_snps)
     y = load_1d_array_from_file(phenotypes)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed_value, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.9, random_state=seed_value, stratify=y)
 
     return X_train, X_test, y_train, y_test
 
 def augment_data(X, y, seed_value):
     X_aug, y_aug = X.copy(), y.copy()
-    duplicate_and_insert(X, X_aug, y, y_aug, 1, 16, seed=seed_value)
+    print("Duplicating and Inserting SNPs... ")
+    duplicate_and_insert_memory_efficient(X, X_aug, y, y_aug, 1, 16, seed=seed_value)
+    print("Done")
     return X_aug, y_aug
 
 def main(seed, epochs, printStats=True, savePerf=False, top_snps=None):
@@ -171,9 +173,9 @@ def main(seed, epochs, printStats=True, savePerf=False, top_snps=None):
 
     dataset = SNPDataset(X_train_aug, y_train_aug)
     dataset2 = SNPDataset(X_test_aug, y_test_aug)
-    train_loader = DataLoader(dataset, batch_size=32, shuffle=True)  # Adjust batch size as needed
-    val_loader = DataLoader(dataset2, batch_size=32
-                            , shuffle=False)
+    train_loader = DataLoader(dataset, batch_size=5, shuffle=True, pin_memory=True)  # Adjust batch size as needed
+    val_loader = DataLoader(dataset2, batch_size=5
+                            , shuffle=False, pin_memory=True)
 
     model = SNPTransformer()
     accuracies = train_model(model, train_loader, val_loader)
@@ -206,7 +208,7 @@ def EvalScript(iterations, top_snps, logging_file):
 
 if __name__ == "__main__":
     start_time = time.time()  # Start timer
-    EvalScript(1, "Data/TopSNPs/xgboost/top500_SNPs_xgb_binary.txt", "Logging/Transformer/adsfadsf.json")
+    EvalScript(1, "Data/output_hd_exclude_binary_herd.txt", "Logging/Transformer/full.json")
     end_time = time.time()  # End timer
     elapsed_time = end_time - start_time
 
