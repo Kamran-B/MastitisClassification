@@ -158,16 +158,19 @@ def duplicate_and_insert_memory_efficient(
         # Check if the current element's label matches the specified label_value
         if original_target_labels[i] == label_value:
             # Duplicate the current element num_duplicates times
+            positions = []
             for _ in range(num_duplicates):
                 # Generate a random position in the new_target_array to insert the duplicate.
                 # rng.integers(low, high) returns an integer in the interval [low, high)
-                insert_position = rng.integers(0, len(target_array) + 1)
-                # Insert a copy of the element into the new_target_array.
-                # np.insert returns a new array with the value inserted.
-                target_array = np.insert(target_array, insert_position, original_array[i], axis=0)
+                positions.append(rng.integers(0, len(target_array) + 1))
 
-                # Insert the label_value into the new_target_labels at the same random position.
-                target_labels = np.insert(target_labels, insert_position, label_value, axis=0)
+
+            # Insert a copy of the element into the new_target_array.
+            # np.insert returns a new array with the value inserted.
+            target_array = np.insert(target_array, positions, original_array[i], axis=0)
+
+            # Insert the label_value into the new_target_labels at the same random position.
+            target_labels = np.insert(target_labels, positions, label_value, axis=0)
 
     return target_array, target_labels
 
