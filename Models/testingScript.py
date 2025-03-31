@@ -2,7 +2,7 @@ import random
 import numpy as np
 import json
 from datetime import datetime
-from Transformer import main
+from Models.TransformerBased.Transformer import main
 
 # Configuration
 iterations = 10  # Number of runs
