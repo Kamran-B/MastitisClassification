@@ -35,3 +35,5 @@ selected_items = [raw[i] for i in listOfIndexes]
 
 print(selected_items)
 print(len(selected_items))
+print("\n".join(selected_items))
+
