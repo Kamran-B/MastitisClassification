@@ -28,6 +28,23 @@ def scaled_dot_product_attention(Q, K, V):
 
     return output
 
+class PositionalEncoding(nn.Module):
+    def __init__(self, seq_len, d_model):
+        self.seq_len = seq_len
+        self.d_model = d_model
+
+    def forward(self, input):
+        pos = torch.arange(self.seq_len)[:, np.newaxis]
+        two_i = torch.arange(0, self.d_model, 2)
+        exp = two_i / self.d_model
+        div_term = np.power(10000, exp)
+        angles = pos / div_term
+        positional_encoding = np.zeros((self.seq_len, self.d_model))
+        positional_encoding[:, 0::2] = np.sin(angles)
+        positional_encoding[:, 1::2] = np.cos(angles)
+        output = input + positional_encoding
+        return output
+
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, embed_dim, num_heads, dropout=0.1):
@@ -66,7 +83,7 @@ class MultiHeadAttention(nn.Module):
 
 class TransformerEncoder(nn.Module):
     def __init__(self):
-        self.embed_dim = 16
+        self.embed_dim = 16 # also called d_model
         self.num_heads = 4
         self.ffn_dim = 4 * self.embed_dim
         self.dropout = nn.Dropout(0.2)
@@ -91,12 +108,15 @@ class TransformerEncoder(nn.Module):
         return output_layer2
 
 class Transformer(nn.Module):
-    def __init__(self):
+    def __init__(self, seq_len, batch_size):
         self.num_encoder_layers = 6
         self.num_decoder_layers = 6
+        self.seq_len = 512
+        self.batch_size = 8
         self.vocab_size = 3
-        self.embed_dim = 16
+        self.positional_encoding = PositionalEncoding(self.batch_size, self.seq_len, self.embed_dim)
+        self.embed_dim = 16 # also called d_model
         self.embed = nn.Embedding(self.vocab_size, self.embed_dim)
         self.encoders = nn.ModuleList([TransformerEncoder() for i in range(self.num_encoder_layers)])
 
-class TransformerDecoder(nn.Module):
+#class TransformerDecoder(nn.Module):
