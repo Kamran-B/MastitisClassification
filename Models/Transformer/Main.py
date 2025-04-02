@@ -1,7 +1,8 @@
 import sys
 
+from pandas.core.interchange.from_dataframe import primitive_column_to_ndarray
 from sklearn.model_selection import train_test_split
-
+from Models.Transformer.Attention import Transformer
 from DataQuality.funtional_consequences import *
 from DataQuality.to_array import bit_reader
 from DataQuality.model_saving import *
@@ -31,4 +32,6 @@ if __name__ == '__main__':
     X_train_aug, y_train_aug = augment_data(X_train, y_train, seed)
     X_test_aug, y_test_aug = augment_data(X_test, y_test, seed)
     
-    '''EMBEDDING'''
+    transformer = Transformer()
+    print(X_train_aug.shape)
+    transformer.forward(X_train_aug)
