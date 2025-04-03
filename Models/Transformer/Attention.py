@@ -54,6 +54,108 @@ def scaled_dot_product_attention(Q, K, V, mask=None):
 
     return output, attention_weights # Also return weights for inspection
 
+import math
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np # Keep numpy if used elsewhere
+
+# --- RoPE Implementation ---
+
+class RotaryEmbedding(nn.Module):
+    """
+    Rotary Positional Embedding (RoPE) implementation.
+    Precomputes frequency components based on dimension and max sequence length.
+    """
+    def __init__(self, dim: int, max_seq_len: int, base: int = 10000, device=None):
+        """
+        Args:
+            dim (int): Dimension of the embeddings (head_dim in MHA).
+            max_seq_len (int): Maximum sequence length.
+            base (int): Base value for frequency calculation.
+            device: The device to store the precomputed frequencies on.
+        """
+        super().__init__()
+        self.dim = dim
+        self.max_seq_len = max_seq_len
+        self.base = base
+        self.device = device
+
+        # Calculate inverse frequencies (theta_i = 1 / (base^(2i / dim)))
+        # Shape: (dim / 2)
+        inv_freq = 1.0 / (self.base ** (torch.arange(0, self.dim, 2, dtype=torch.float32, device=device) / self.dim))
+        self.register_buffer("inv_freq", inv_freq, persistent=False)
+
+        # Precompute positional encodings (m * theta_i)
+        self._set_cos_sin_cache(max_seq_len, device=device)
+
+    def _set_cos_sin_cache(self, seq_len: int, device):
+        """Precomputes cosine and sine values for RoPE."""
+        self.max_seq_len_cached = seq_len
+        t = torch.arange(seq_len, device=device, dtype=self.inv_freq.dtype)
+
+        # Calculate frequencies for each position: (seq_len, dim / 2)
+        freqs = torch.einsum("i,j->ij", t, self.inv_freq)
+        # Duplicate frequencies for paired dimensions: (seq_len, dim)
+        emb = torch.cat((freqs, freqs), dim=-1)
+
+        # Calculate cos and sin values: (1, 1, seq_len, dim) for broadcasting
+        # Add dimensions for batch and head compatibility
+        self.register_buffer("cos_cached", emb.cos()[None, None, :, :], persistent=False)
+        self.register_buffer("sin_cached", emb.sin()[None, None, :, :], persistent=False)
+
+    def forward(self, seq_len: int):
+        """
+        Retrieves precomputed cos and sin values for a given sequence length.
+
+        Args:
+            seq_len (int): The sequence length of the current input.
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor]: cos and sin tensors of shape
+                                               (1, 1, seq_len, dim).
+        """
+        # Recompute if seq_len exceeds cache or cache is not on the right device
+        if seq_len > self.max_seq_len_cached or self.cos_cached.device != self.device:
+             self._set_cos_sin_cache(seq_len, device=self.device)
+             # Note: If seq_len often changes and exceeds initial max_seq_len,
+             # this recomputation can happen frequently. Consider setting
+             # initial max_seq_len large enough if memory allows.
+
+        return (
+            self.cos_cached[:, :, :seq_len, ...],
+            self.sin_cached[:, :, :seq_len, ...],
+        )
+
+def rotate_half(x: torch.Tensor) -> torch.Tensor:
+    """Rotates half the hidden dims of the input tensor."""
+    # Split the last dimension into two halves
+    x1 = x[..., : x.shape[-1] // 2]
+    x2 = x[..., x.shape[-1] // 2 :]
+    # Concatenate rotated halves: (-x2, x1)
+    return torch.cat((-x2, x1), dim=-1)
+
+def apply_rotary_emb(
+    q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    Applies Rotary Positional Embedding to Query and Key tensors.
+
+    Args:
+        q (torch.Tensor): Query tensor. Shape: (B, N, S, H)
+        k (torch.Tensor): Key tensor. Shape: (B, N, S, H)
+        cos (torch.Tensor): Precomputed cosine values. Shape: (1, 1, S, H)
+        sin (torch.Tensor): Precomputed sine values. Shape: (1, 1, S, H)
+
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: Rotated Q and K tensors.
+    """
+    # Apply rotation formula: q' = q * cos + rotate_half(q) * sin
+    q_embed = (q * cos) + (rotate_half(q) * sin)
+    k_embed = (k * cos) + (rotate_half(k) * sin)
+    return q_embed, k_embed
+
+
 
 class PositionalEncoding(nn.Module):
     """
@@ -111,7 +213,7 @@ class PositionalEncoding(nn.Module):
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, embed_dim, num_heads):
+    def __init__(self, embed_dim, num_heads, max_seq_len):
         super().__init__()
         self.embedding_dim = embed_dim
         self.num_heads = num_heads
@@ -122,6 +224,8 @@ class MultiHeadAttention(nn.Module):
         self.k_proj = nn.Linear(self.embedding_dim, self.embedding_dim)
         self.v_proj = nn.Linear(self.embedding_dim, self.embedding_dim)
         self.out_proj = nn.Linear(self.embedding_dim, self.embedding_dim)
+        self.rotary_emb = RotaryEmbedding(self.head_dim, max_seq_len=max_seq_len)
+
 
     def forward(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
         """
@@ -153,6 +257,31 @@ class MultiHeadAttention(nn.Module):
         K = K.view(b, seq_len_k, self.num_heads, self.head_dim).transpose(1, 2)
         V = V.view(b, seq_len_v, self.num_heads, self.head_dim).transpose(1, 2)
 
+        # Ensure rotary embeddings are on the same device as Q/K
+        self.rotary_emb.device = Q.device
+        # Get precomputed cos/sin values for the sequence lengths
+        cos_q, sin_q = self.rotary_emb(seq_len=seq_len_q)
+        cos_k, sin_k = self.rotary_emb(seq_len=seq_len_k)
+
+        # Apply rotary embeddings to Q and K
+        Q, K = apply_rotary_emb(Q, K, cos_q,
+                                sin_q)  # Use cos_q/sin_q for both if seq lengths match, else use cos_k/sin_k for K
+        # If seq_len_q != seq_len_k, apply separately:
+        # Q = apply_rotary_emb_single(Q, cos_q, sin_q) # Need a single-tensor version
+        # K = apply_rotary_emb_single(K, cos_k, sin_k)
+        # Let's assume seq_len_q == seq_len_k for self-attention here
+        # The provided apply_rotary_emb handles applying to both Q and K simultaneously
+        # using the same cos/sin, which is typical for self-attention.
+        # If cross-attention, you might need separate cos/sin lengths.
+        # The current apply_rotary_emb assumes cos/sin are broadcastable to Q and K.
+        # Let's refine apply_rotary_emb to take separate cos/sin for Q and K if needed.
+        # For now, assume self-attention where lengths match.
+        # Q, K = apply_rotary_emb(Q, K, cos_q, sin_q) # Simpler if lengths match
+
+        # Refined approach: Apply separately
+        Q = (Q * cos_q) + (rotate_half(Q) * sin_q)
+        K = (K * cos_k) + (rotate_half(K) * sin_k)
+
         # Calculate attention output (pass mask)
         # output shape: (B, N, S_q, H), attn_weights shape: (B, N, S_q, S_k)
         output, _ = scaled_dot_product_attention(Q, K, V, mask=mask) # Pass mask here
@@ -183,11 +312,10 @@ class Transformer(nn.Module):
         self.pad_idx = pad_idx
 
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=pad_idx)
-        self.positional_encoding = PositionalEncoding(embed_dim, max_seq_len)
 
         # Encoder Stack
         self.encoders = nn.ModuleList([
-            TransformerEncoder(embed_dim, num_heads, ffn_dim, dropout)
+            TransformerEncoder(embed_dim, num_heads, ffn_dim, dropout, max_seq_len)
             for _ in range(num_encoder_layers)
         ])
 
@@ -234,7 +362,6 @@ class Transformer(nn.Module):
         # 2. Embeddings and Positional Encoding
         # src: (B, S) -> src_emb: (B, S, E)
         src_emb = self.embedding(src) * math.sqrt(self.embed_dim)
-        src_emb = self.positional_encoding(src_emb)
         src_emb = self.dropout(src_emb)
 
         # 3. Pass through Encoder Stack
@@ -267,13 +394,13 @@ class Transformer(nn.Module):
 
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, embed_dim, num_heads, ffn_dim, dropout):
+    def __init__(self, embed_dim, num_heads, ffn_dim, dropout, max_seq_len):
         super().__init__()
         self.embed_dim = embed_dim
         self.num_heads = num_heads
         self.ffn_dim = ffn_dim
 
-        self.multi_head_attention = MultiHeadAttention(self.embed_dim, self.num_heads)
+        self.multi_head_attention = MultiHeadAttention(self.embed_dim, self.num_heads, max_seq_len)
         self.layer_norm1 = nn.LayerNorm(self.embed_dim)
         self.layer_norm2 = nn.LayerNorm(self.embed_dim)
         self.linear1 = nn.Linear(self.embed_dim, self.ffn_dim)

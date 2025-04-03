@@ -2,9 +2,10 @@ import time
 import torch
 import torch.nn as nn
 from sklearn.model_selection import train_test_split
+from sklearn.utils import compute_class_weight
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
-
+from sklearn.metrics import precision_score, recall_score, f1_score
 from Models.Transformer.Attention import Transformer
 from DataQuality.funtional_consequences import *
 from DataQuality.to_array import bit_reader
@@ -14,13 +15,13 @@ from DataQuality.model_saving import *
 CLS_TOKEN_ID = 4
 VOCAB_SIZE = 5 # Size of the source vocabulary
 NUM_CLASSES = 2   # Binary classification
-EMBED_DIM = 512 # (Needs to be divisible by num_heads)
-NUM_HEADS = 8
-NUM_ENCODER_LAYERS = 3 # Only encoder layers are used
-FFN_DIM = 1024 # Hidden dimension of Feed Forward networks
+EMBED_DIM = 16 # (Needs to be divisible by num_heads)
+NUM_HEADS = 4
+NUM_ENCODER_LAYERS = 4 # Only encoder layers are used
+FFN_DIM = 128 # Hidden dimension of Feed Forward networks
 MAX_SEQ_LEN = 501 # Maximum sequence length for positional encoding
-DROPOUT = 0.2
-LEARNING_RATE = 0.000001
+DROPOUT = 0.15
+LEARNING_RATE = 0.0005
 BATCH_SIZE = 32
 NUM_EPOCHS = 10
 PAD_IDX = 0 # Assuming 0 is the padding index
@@ -147,6 +148,8 @@ def evaluate(model, dataloader, criterion, device):
     total_loss = 0
     total_correct = 0
     total_samples = 0
+    all_eval_preds = []
+    all_eval_labels = []
 
     with torch.no_grad():  # Disable gradient calculations
         for src, labels in dataloader:
@@ -164,17 +167,29 @@ def evaluate(model, dataloader, criterion, device):
 
             # Calculate accuracy
             predictions = torch.argmax(logits, dim=1)
+
+            all_eval_preds.append(predictions.detach().cpu())
+            all_eval_labels.append(labels.detach().cpu())
             total_correct += (predictions == labels).sum().item()
             total_samples += labels.size(0)
 
     avg_loss = total_loss / len(dataloader)
-    avg_acc = total_correct / total_samples
-    return avg_loss, avg_acc
+    all_eval_preds_tensor = torch.cat(all_eval_preds)
+    all_eval_labels_tensor = torch.cat(all_eval_labels)
+
+    eval_accuracy = (all_eval_preds_tensor == all_eval_labels_tensor).float().mean().item()
+    eval_precision = precision_score(all_eval_labels_tensor.numpy(), all_eval_preds_tensor.numpy(), average='binary',
+                                     zero_division=0)
+    eval_recall = recall_score(all_eval_labels_tensor.numpy(), all_eval_preds_tensor.numpy(), average='binary',
+                               zero_division=0)
+    eval_f1 = f1_score(all_eval_labels_tensor.numpy(), all_eval_preds_tensor.numpy(), average='binary', zero_division=0)
+
+    return avg_loss, eval_accuracy, eval_precision, eval_recall, eval_f1
 
 
 if __name__ == '__main__':
     top_snps = "Data/TopSNPs/rf/top500_SNPs_rf_binary.txt"
-    seed = 50
+    seed = 555
     random.seed(seed)  # Python random module
     np.random.seed(seed)  # Numpy random module
     torch.manual_seed(seed)  # PyTorch CPU random seed
@@ -186,6 +201,14 @@ if __name__ == '__main__':
     X_train, X_test, y_train, y_test = prepare_data(seed, top_snps)
     X_train_aug, y_train_aug = augment_data(X_train, y_train, seed)
     X_test_aug, y_test_aug = augment_data(X_test, y_test, seed)
+    labels_for_weights = y_train_aug  # Or y_train
+    unique_classes = np.unique(labels_for_weights)
+    class_weights = compute_class_weight('balanced', classes=unique_classes, y=labels_for_weights)
+    # Convert weights to a tensor and move to device
+    class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device)
+    print(f"Calculated Class Weights: {class_weights_tensor.cpu().numpy()}")
+
+    print(X_train_aug.shape, y_train_aug.shape)
 
     train_dataset = SNPDataset(X_train_aug, y_train_aug, CLS_TOKEN_ID, PAD_IDX)
     test_dataset = SNPDataset(X_test_aug, y_test_aug, CLS_TOKEN_ID, PAD_IDX)
@@ -206,10 +229,10 @@ if __name__ == '__main__':
     ).to(device)
 
     # Loss Function - CrossEntropyLoss works for multi-class (including binary)
-    criterion = nn.CrossEntropyLoss()  # No need for ignore_index if labels don't contain padding
+    criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)  # No need for ignore_index if labels don't contain padding
 
     # Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 
 
     # --- Main Training Loop ---
@@ -218,11 +241,11 @@ if __name__ == '__main__':
         print(f"\n--- Epoch {epoch + 1}/{NUM_EPOCHS} ---")
 
         train_loss, train_acc, epoch_time = train_epoch(model, train_loader, optimizer, criterion, device)
-        val_loss, val_acc = evaluate(model, test_loader, criterion, device)
+        val_loss, val_acc, val_prec, val_rec, val_f1 = evaluate(model, test_loader, criterion, device)
 
         print(f"Epoch {epoch + 1} Summary:")
         print(f"  Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f}")
-        print(f"  Val Loss:   {val_loss:.4f} | Val Acc:   {val_acc:.4f}")
+        print(f"  Val Loss:   {val_loss:.4f} | Val Acc:   {val_acc:.4f} | Val P:   {val_prec:.4f} | Val R:   {val_rec:.4f} | Val F1:   {val_f1:.4f}")
         print(f"  Epoch Time: {epoch_time:.2f} seconds")
 
     print("\nTraining Finished.")
