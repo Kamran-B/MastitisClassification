@@ -175,7 +175,7 @@ class Transformer(nn.Module):
                  ffn_dim: int,
                  num_classes: int, # Number of output classes
                  max_seq_len: int,
-                 dropout: float = 0.1,
+                 dropout: float,
                  pad_idx: int = 0):
         super().__init__()
 
@@ -267,7 +267,7 @@ class Transformer(nn.Module):
 
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, embed_dim, num_heads, ffn_dim, dropout=0.1):
+    def __init__(self, embed_dim, num_heads, ffn_dim, dropout):
         super().__init__()
         self.embed_dim = embed_dim
         self.num_heads = num_heads
