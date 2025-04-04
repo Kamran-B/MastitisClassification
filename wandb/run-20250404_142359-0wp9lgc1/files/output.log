@@ -1,0 +1,89 @@
+device: mps
+Reading bits...
+Reading bits: 100%|██████████| 932k/932k [00:00<00:00, 52.6MB/s]
+Finished reading bits. Original shape: N/A
+Shifted SNP values (now 1, 2, 3). Shape: (1860, 500)
+Calculated Class Weights: [0.94483733 1.0620031 ]
+(2672, 500) (2672,)
+Using CosineAnnealingLR scheduler with T_max=10, eta_min=1e-07
+Starting Training for Binary Classification...
+
+--- Epoch 1/10 ---
+Current Learning Rate: 0.000100
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/torch/optim/lr_scheduler.py:216: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  warnings.warn(
+  Batch 10/84, Loss: 0.6184, Acc: 0.5312
+  Batch 20/84, Loss: 0.5472, Acc: 0.6250
+  Batch 30/84, Loss: 0.3298, Acc: 0.9062
+  Batch 40/84, Loss: 0.5037, Acc: 0.8125
+  Batch 50/84, Loss: 0.2307, Acc: 0.9688
+  Batch 60/84, Loss: 0.4008, Acc: 0.8438
+  Batch 70/84, Loss: 0.3284, Acc: 0.8750
+  Batch 80/84, Loss: 0.4005, Acc: 0.8125
+Epoch 1 Summary:
+  Train Loss: 0.4521 | Train Acc: 0.7987
+  Val Loss:   0.1859 | Val Acc:   0.9630 | Val P:   0.9745 | Val R:   0.9474 | Val F1:   0.9608
+  Epoch Time: 60.57 seconds
+
+--- Epoch 2/10 ---
+Current Learning Rate: 0.000098
+  Batch 10/84, Loss: 0.3828, Acc: 0.8438
+  Batch 20/84, Loss: 0.3249, Acc: 0.8750
+  Batch 30/84, Loss: 0.5899, Acc: 0.6875
+  Batch 40/84, Loss: 0.2713, Acc: 0.9062
+  Batch 50/84, Loss: 0.3800, Acc: 0.8438
+  Batch 60/84, Loss: 0.2545, Acc: 0.9375
+  Batch 70/84, Loss: 0.3383, Acc: 0.8438
+  Batch 80/84, Loss: 0.2101, Acc: 0.9688
+Epoch 2 Summary:
+  Train Loss: 0.3436 | Train Acc: 0.8698
+  Val Loss:   0.1250 | Val Acc:   0.9749 | Val P:   1.0000 | Val R:   0.9474 | Val F1:   0.9730
+  Epoch Time: 59.49 seconds
+
+--- Epoch 3/10 ---
+Current Learning Rate: 0.000090
+  Batch 10/84, Loss: 0.2917, Acc: 0.8750
+  Batch 20/84, Loss: 0.3740, Acc: 0.8125
+  Batch 30/84, Loss: 0.3922, Acc: 0.8750
+  Batch 40/84, Loss: 0.3907, Acc: 0.8438
+  Batch 50/84, Loss: 0.2839, Acc: 0.9062
+  Batch 60/84, Loss: 0.2514, Acc: 0.9375
+  Batch 70/84, Loss: 0.2492, Acc: 0.9062
+  Batch 80/84, Loss: 0.3513, Acc: 0.8125
+Epoch 3 Summary:
+  Train Loss: 0.3308 | Train Acc: 0.8649
+  Val Loss:   0.1756 | Val Acc:   0.9719 | Val P:   0.9935 | Val R:   0.9474 | Val F1:   0.9699
+  Epoch Time: 58.56 seconds
+
+--- Epoch 4/10 ---
+Current Learning Rate: 0.000079
+  Batch 10/84, Loss: 0.2917, Acc: 0.8750
+  Batch 20/84, Loss: 0.2294, Acc: 0.9062
+  Batch 30/84, Loss: 0.2154, Acc: 0.9375
+  Batch 40/84, Loss: 0.3665, Acc: 0.8125
+  Batch 50/84, Loss: 0.4774, Acc: 0.7812
+  Batch 60/84, Loss: 0.2200, Acc: 0.9688
+  Batch 70/84, Loss: 0.4328, Acc: 0.8125
+  Batch 80/84, Loss: 0.3852, Acc: 0.8125
+Epoch 4 Summary:
+  Train Loss: 0.3225 | Train Acc: 0.8686
+  Val Loss:   0.1804 | Val Acc:   0.9719 | Val P:   0.9935 | Val R:   0.9474 | Val F1:   0.9699
+  Epoch Time: 58.26 seconds
+
+--- Epoch 5/10 ---
+Current Learning Rate: 0.000065
+  Batch 10/84, Loss: 0.3843, Acc: 0.9375
+  Batch 20/84, Loss: 0.3910, Acc: 0.8438
+  Batch 30/84, Loss: 0.2489, Acc: 0.9375
+  Batch 40/84, Loss: 0.3831, Acc: 0.8438
+  Batch 50/84, Loss: 0.2605, Acc: 0.8750
+  Batch 60/84, Loss: 0.3825, Acc: 0.8750
+  Batch 70/84, Loss: 0.2725, Acc: 0.9062
+  Batch 80/84, Loss: 0.2259, Acc: 0.9062
+Epoch 5 Summary:
+  Train Loss: 0.3133 | Train Acc: 0.8653
+  Val Loss:   0.1284 | Val Acc:   0.9734 | Val P:   0.9967 | Val R:   0.9474 | Val F1:   0.9714
+  Epoch Time: 59.21 seconds
+
+--- Epoch 6/10 ---
+Current Learning Rate: 0.000050

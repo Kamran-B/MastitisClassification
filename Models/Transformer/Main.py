@@ -1,12 +1,14 @@
 import time
 import torch
 import torch.nn as nn
+import wandb
 from sklearn.model_selection import train_test_split
 from sklearn.utils import compute_class_weight
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
 from sklearn.metrics import precision_score, recall_score, f1_score
 from Models.Transformer.Attention import Transformer
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from DataQuality.funtional_consequences import *
 from DataQuality.to_array import bit_reader
 from DataQuality.model_saving import *
@@ -15,16 +17,35 @@ from DataQuality.model_saving import *
 CLS_TOKEN_ID = 4
 VOCAB_SIZE = 5 # Size of the source vocabulary
 NUM_CLASSES = 2   # Binary classification
-EMBED_DIM = 16 # (Needs to be divisible by num_heads)
-NUM_HEADS = 4
-NUM_ENCODER_LAYERS = 4 # Only encoder layers are used
-FFN_DIM = 128 # Hidden dimension of Feed Forward networks
+EMBED_DIM = 128 # (Needs to be divisible by num_heads)
+NUM_HEADS = 8
+NUM_ENCODER_LAYERS = 6 # Only encoder layers are used
+FFN_DIM = 512 # Hidden dimension of Feed Forward networks
 MAX_SEQ_LEN = 501 # Maximum sequence length for positional encoding
 DROPOUT = 0.15
-LEARNING_RATE = 0.0005
+LEARNING_RATE = 0.0001
 BATCH_SIZE = 32
 NUM_EPOCHS = 10
 PAD_IDX = 0 # Assuming 0 is the padding index
+ETA_MIN = 1e-7
+
+run = wandb.init(
+    project="transformerFromScratch",
+    config={
+        "starting_learning_rate": LEARNING_RATE,
+        "epochs": NUM_EPOCHS,
+        "batch_size": BATCH_SIZE,
+        "embed_dim": EMBED_DIM,
+        "num_heads": NUM_HEADS,
+        "num_encoder_layers": NUM_ENCODER_LAYERS,
+        "ffn_dim": FFN_DIM,
+        "dropout": DROPOUT,
+        "max_seq_len": MAX_SEQ_LEN,
+        "batch_size": BATCH_SIZE,
+        "ETA_MIN": ETA_MIN,
+        "scheduler": "cosine",
+    },
+)
 
 device = torch.device("mps" if torch.backends.mps.is_available() else
                           "cuda" if torch.cuda.is_available() else
@@ -189,7 +210,7 @@ def evaluate(model, dataloader, criterion, device):
 
 if __name__ == '__main__':
     top_snps = "Data/TopSNPs/rf/top500_SNPs_rf_binary.txt"
-    seed = 555
+    seed = 4114
     random.seed(seed)  # Python random module
     np.random.seed(seed)  # Numpy random module
     torch.manual_seed(seed)  # PyTorch CPU random seed
@@ -233,12 +254,16 @@ if __name__ == '__main__':
 
     # Optimizer
     optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE)
-
+    scheduler = CosineAnnealingLR(optimizer, T_max=NUM_EPOCHS, eta_min=ETA_MIN)
+    print(f"Using CosineAnnealingLR scheduler with T_max={NUM_EPOCHS}, eta_min={ETA_MIN}")
 
     # --- Main Training Loop ---
     print("Starting Training for Binary Classification...")
     for epoch in range(NUM_EPOCHS):
         print(f"\n--- Epoch {epoch + 1}/{NUM_EPOCHS} ---")
+        current_lr = optimizer.param_groups[0]['lr']  # Get current learning rate
+        print(f"Current Learning Rate: {current_lr:.6f}")
+        scheduler.step()
 
         train_loss, train_acc, epoch_time = train_epoch(model, train_loader, optimizer, criterion, device)
         val_loss, val_acc, val_prec, val_rec, val_f1 = evaluate(model, test_loader, criterion, device)
@@ -247,15 +272,21 @@ if __name__ == '__main__':
         print(f"  Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f}")
         print(f"  Val Loss:   {val_loss:.4f} | Val Acc:   {val_acc:.4f} | Val P:   {val_prec:.4f} | Val R:   {val_rec:.4f} | Val F1:   {val_f1:.4f}")
         print(f"  Epoch Time: {epoch_time:.2f} seconds")
-
+        run.log({
+            "epoch": epoch + 1,
+            "train_loss": train_loss,
+            "train_acc": train_acc,
+            "val_loss": val_loss,
+            "val_acc": val_acc,
+            "val_precision": val_prec,
+            "val_recall": val_rec,
+            "val_f1": val_f1,
+            "curr_learning_rate": optimizer.param_groups[0]['lr']  # Log current LR
+        })
+    run.finish()
     print("\nTraining Finished.")
 
     # --- Optional: Save the model ---
     # torch.save(model.state_dict(), 'transformer_classifier_model.pth')
     # print("Model saved to transformer_classifier_model.pth")
-
-    # --- Testing ---
-    print("\nStarting Testing...")
-    test_loss, test_acc = evaluate(model, test_loader, criterion, device)  # Using val set as test set
-    print(f"Test Loss: {test_loss:.4f} | Test Acc: {test_acc:.4f}")
 

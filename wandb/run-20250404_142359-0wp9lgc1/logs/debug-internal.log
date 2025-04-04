@@ -1,0 +1,7 @@
+{"time":"2025-04-04T14:23:59.300621-07:00","level":"INFO","msg":"stream: starting","core version":"0.19.9","symlink path":"/Users/gavinlynch04/PycharmProjects/MastitisClassification2/wandb/run-20250404_142359-0wp9lgc1/logs/debug-core.log"}
+{"time":"2025-04-04T14:23:59.527245-07:00","level":"INFO","msg":"created new stream","id":"0wp9lgc1"}
+{"time":"2025-04-04T14:23:59.527287-07:00","level":"INFO","msg":"stream: started","id":"0wp9lgc1"}
+{"time":"2025-04-04T14:23:59.527303-07:00","level":"INFO","msg":"writer: Do: started","stream_id":"0wp9lgc1"}
+{"time":"2025-04-04T14:23:59.527578-07:00","level":"INFO","msg":"sender: started","stream_id":"0wp9lgc1"}
+{"time":"2025-04-04T14:23:59.527709-07:00","level":"INFO","msg":"handler: started","stream_id":"0wp9lgc1"}
+{"time":"2025-04-04T14:23:59.815128-07:00","level":"INFO","msg":"Starting system monitor"}
