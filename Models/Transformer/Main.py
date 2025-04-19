@@ -17,12 +17,12 @@ from DataQuality.model_saving import *
 CLS_TOKEN_ID = 4
 VOCAB_SIZE = 5 # Size of the source vocabulary
 NUM_CLASSES = 2   # Binary classification
-EMBED_DIM = 128 # (Needs to be divisible by num_heads)
-NUM_HEADS = 8
-NUM_ENCODER_LAYERS = 6 # Only encoder layers are used
-FFN_DIM = 512 # Hidden dimension of Feed Forward networks
+EMBED_DIM = 768 # (Needs to be divisible by num_heads)
+NUM_HEADS = 12
+NUM_ENCODER_LAYERS = 12 # Only encoder layers are used
+FFN_DIM = 1024 # Hidden dimension of Feed Forward networks
 MAX_SEQ_LEN = 501 # Maximum sequence length for positional encoding
-DROPOUT = 0.15
+DROPOUT = 0.1
 LEARNING_RATE = 0.0001
 BATCH_SIZE = 32
 NUM_EPOCHS = 10
