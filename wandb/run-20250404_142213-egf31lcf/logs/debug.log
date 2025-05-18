@@ -1,0 +1,16 @@
+2025-04-04 14:22:13,137 INFO    MainThread:30130 [wandb_setup.py:_flush():67] Current SDK version is 0.19.9
+2025-04-04 14:22:13,138 INFO    MainThread:30130 [wandb_setup.py:_flush():67] Configure stats pid to 30130
+2025-04-04 14:22:13,138 INFO    MainThread:30130 [wandb_setup.py:_flush():67] Loading settings from /Users/gavinlynch04/.config/wandb/settings
+2025-04-04 14:22:13,138 INFO    MainThread:30130 [wandb_setup.py:_flush():67] Loading settings from /Users/gavinlynch04/PycharmProjects/MastitisClassification2/wandb/settings
+2025-04-04 14:22:13,138 INFO    MainThread:30130 [wandb_setup.py:_flush():67] Loading settings from environment variables
+2025-04-04 14:22:13,138 INFO    MainThread:30130 [wandb_init.py:setup_run_log_directory():662] Logging user logs to /Users/gavinlynch04/PycharmProjects/MastitisClassification2/wandb/run-20250404_142213-egf31lcf/logs/debug.log
+2025-04-04 14:22:13,138 INFO    MainThread:30130 [wandb_init.py:setup_run_log_directory():663] Logging internal logs to /Users/gavinlynch04/PycharmProjects/MastitisClassification2/wandb/run-20250404_142213-egf31lcf/logs/debug-internal.log
+2025-04-04 14:22:13,138 INFO    MainThread:30130 [wandb_init.py:init():781] calling init triggers
+2025-04-04 14:22:13,138 INFO    MainThread:30130 [wandb_init.py:init():786] wandb.init called with sweep_config: {}
+config: {'starting_learning_rate': 0.0001, 'epochs': 10, 'batch_size': 32, 'embed_dim': 128, 'num_heads': 8, 'num_encoder_layers': 6, 'ffn_dim': 512, 'dropout': 0.15, 'max_seq_len': 501, 'ETA_MIN': 1e-07, 'scheduler': 'cosine', '_wandb': {}}
+2025-04-04 14:22:13,138 INFO    MainThread:30130 [wandb_init.py:init():809] starting backend
+2025-04-04 14:22:13,138 INFO    MainThread:30130 [wandb_init.py:init():813] sending inform_init request
+2025-04-04 14:22:13,182 INFO    MainThread:30130 [backend.py:_multiprocessing_setup():101] multiprocessing start_methods=spawn,fork,forkserver, using: spawn
+2025-04-04 14:22:13,183 INFO    MainThread:30130 [wandb_init.py:init():823] backend started and connected
+2025-04-04 14:22:13,185 INFO    MainThread:30130 [wandb_init.py:init():915] updated telemetry
+2025-04-04 14:22:13,199 INFO    MainThread:30130 [wandb_init.py:init():939] communicating run to backend with 90.0 second timeout

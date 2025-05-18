@@ -1,0 +1,17 @@
+{"time":"2025-04-04T14:22:13.18415-07:00","level":"INFO","msg":"stream: starting","core version":"0.19.9","symlink path":"/Users/gavinlynch04/PycharmProjects/MastitisClassification2/wandb/run-20250404_142213-egf31lcf/logs/debug-core.log"}
+{"time":"2025-04-04T14:22:13.401337-07:00","level":"INFO","msg":"created new stream","id":"egf31lcf"}
+{"time":"2025-04-04T14:22:13.401395-07:00","level":"INFO","msg":"stream: started","id":"egf31lcf"}
+{"time":"2025-04-04T14:22:13.401402-07:00","level":"INFO","msg":"handler: started","stream_id":"egf31lcf"}
+{"time":"2025-04-04T14:22:13.40144-07:00","level":"INFO","msg":"writer: Do: started","stream_id":"egf31lcf"}
+{"time":"2025-04-04T14:22:13.401464-07:00","level":"INFO","msg":"sender: started","stream_id":"egf31lcf"}
+{"time":"2025-04-04T14:22:13.469908-07:00","level":"ERROR","msg":"HTTP error","status":404,"method":"POST","url":"https://api.wandb.ai/graphql"}
+{"time":"2025-04-04T14:22:13.469979-07:00","level":"ERROR","msg":"sender: upsertRun:","error":"failed to upsert bucket: returned error 404: {\"data\":{\"upsertBucket\":null},\"errors\":[{\"message\":\"entity MastitisResearch not found during upsertBucket\",\"path\":[\"upsertBucket\"]}]}"}
+{"time":"2025-04-04T14:22:14.472788-07:00","level":"INFO","msg":"stream: closing","id":"egf31lcf"}
+{"time":"2025-04-04T14:22:14.47292-07:00","level":"ERROR","msg":"sender: upsertConfig: RunRecord is nil"}
+{"time":"2025-04-04T14:22:14.589094-07:00","level":"ERROR","msg":"HTTP error","status":404,"method":"POST","url":"https://api.wandb.ai/graphql"}
+{"time":"2025-04-04T14:22:14.589245-07:00","level":"ERROR","msg":"runfiles: CreateRunFiles returned error: returned error 404: {\"data\":{\"createRunFiles\":null},\"errors\":[{\"message\":\"entity MastitisResearch not found during createRunFiles\",\"path\":[\"createRunFiles\"]}]}"}
+{"time":"2025-04-04T14:22:14.589726-07:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-04-04T14:22:14.589757-07:00","level":"INFO","msg":"handler: closed","stream_id":"egf31lcf"}
+{"time":"2025-04-04T14:22:14.589781-07:00","level":"INFO","msg":"sender: closed","stream_id":"egf31lcf"}
+{"time":"2025-04-04T14:22:14.589771-07:00","level":"INFO","msg":"writer: Close: closed","stream_id":"egf31lcf"}
+{"time":"2025-04-04T14:22:14.590074-07:00","level":"INFO","msg":"stream: closed","id":"egf31lcf"}

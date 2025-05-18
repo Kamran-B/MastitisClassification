@@ -1,0 +1,44 @@
+{
+  "os":  "macOS-15.4-arm64-arm-64bit",
+  "python":  "CPython 3.10.7",
+  "startedAt":  "2025-04-04T21:23:59.297197Z",
+  "program":  "/Users/gavinlynch04/PycharmProjects/MastitisClassification2/Models/Transformer/Main.py",
+  "codePath":  "Models/Transformer/Main.py",
+  "git":  {
+    "remote":  "https://github.com/Kamran-B/MastitisClassification.git",
+    "commit":  "3c5939dc064fe1378ea33a21709e4db3cb78ef73"
+  },
+  "email":  "gavinlynch04@gmail.com",
+  "root":  "/Users/gavinlynch04/PycharmProjects/MastitisClassification2",
+  "host":  "MacBookPro.lan",
+  "executable":  "/usr/local/bin/python3.10",
+  "codePathLocal":  "Models/Transformer/Main.py",
+  "cpu_count":  8,
+  "cpu_count_logical":  8,
+  "disk":  {
+    "/":  {
+      "total":  "494384795648",
+      "used":  "345912057856"
+    },
+    "/System/Volumes/Data":  {
+      "total":  "494384795648",
+      "used":  "345912057856"
+    }
+  },
+  "memory":  {
+    "total":  "17179869184"
+  },
+  "cpu":  {
+    "count":  8,
+    "countLogical":  8
+  },
+  "apple":  {
+    "name":  "Apple M1 Pro",
+    "ecpuCores":  2,
+    "pcpuCores":  6,
+    "gpuCores":  14,
+    "memoryGb":  16,
+    "swapTotalBytes":  "4294967296",
+    "ramTotalBytes":  "17179869184"
+  }
+}
