@@ -108,6 +108,7 @@ def main(seed, epochs, printStats=True, savePerf=False, top_snps=None):
     X_train, X_test, y_train, y_test = prepare_data(seed, top_snps)
     X_train_aug, y_train_aug = augment_data(X_train, y_train, seed)
     X_test_aug, y_test_aug = augment_data(X_test, y_test, seed)
+    del X_train, X_test, y_train, y_test
 
     tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
     train_loader = DataLoader(GeneticDataset(X_train_aug, y_train_aug, tokenizer), batch_size=8, shuffle=True)

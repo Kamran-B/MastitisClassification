@@ -87,8 +87,8 @@ class CustomBERTModel(nn.Module):
         herd_year_embeds = self.herd_year_embedding(herd_year_ids)  # (batch_size, embedding_dim)
 
         # Combine all features
-        combined_features = torch.cat((snp_pooled_avg, breed_embeds, herd_year_embeds),
-                                      dim=-1)  # (batch_size, combined_dim)
+        # combined_features = torch.cat((snp_pooled_avg, breed_embeds, herd_year_embeds),
+        #                               dim=-1)  # (batch_size, combined_dim)
         #combined_features = self.layer_norm(combined_features)
         hidden_output = self.fc(self.dropout(snp_pooled_avg))  # (batch_size, hidden_dim)
         logits = self.classifier(hidden_output)  # (batch_size, num_labels)
