@@ -1,5 +1,9 @@
 /Data/
+/DataOld/
 saved_models/
 .idea
+Models/FeatureSelection/XGBoostFiles/
+*.xlsx
+*.csv
 *.pyc
 __pycache__/

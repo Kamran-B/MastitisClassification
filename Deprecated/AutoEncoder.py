@@ -9,7 +9,8 @@ from DataQuality.to_array import bit_reader
 
 tf.keras.backend.clear_session()
 
-
+'''Promising at first, although did not seem to improve upon Random Forest, and significantly worse than 
+transformer models explored later.'''
 # tf.config.set_visible_devices([], 'GPU')
 
 

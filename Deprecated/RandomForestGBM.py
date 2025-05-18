@@ -10,6 +10,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import StackingClassifier
 
 
+'''Extraordinarily long training times limited usefulness, did not seem to improve upon Random forest accuracy,
+ignored to focus on transformer.'''
+
 def read_numbers_from_file(file_path):
     numbers = []
     try:
