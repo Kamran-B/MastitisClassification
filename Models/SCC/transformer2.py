@@ -11,6 +11,18 @@ from itertools import product
 from datetime import datetime
 from Models.SCC.helper import split_by_id_ratio_1_to_4
 
+# ========= Tee class to log both to console and file =========
+class Logger:
+    def __init__(self, filename):
+        self.terminal = sys.__stdout__
+        self.log = open(filename, "w")
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+    def flush(self):  # needed for Python 3 compatibility
+        self.terminal.flush()
+        self.log.flush()
+
 # ========== Config ==========
 DATA_PATH = "Data/Dairycomp_data/balanced_output.csv"
 FEATURES = ["gap", "LGSCC", "DIM", "FCM", "305ME"]
@@ -53,7 +65,6 @@ raw_val, val_targets = extract_sequences(df_val)
 scaled_train, scaler = standardize(raw_train, fit=True)
 scaled_val, _ = standardize(raw_val, scaler, fit=False)
 
-# ========== Dataset and DataLoader ==========
 class LGSCCDataset(Dataset):
     def __init__(self, sequences, labels):
         self.data = [(seq, label, len(seq)) for seq, label in zip(sequences, labels)]
@@ -63,7 +74,7 @@ class LGSCCDataset(Dataset):
 train_loader_base = DataLoader(LGSCCDataset(scaled_train, train_targets), shuffle=True, collate_fn=collate_fn)
 val_loader_base = DataLoader(LGSCCDataset(scaled_val, val_targets), collate_fn=collate_fn)
 
-# ========== Model Definition ==========
+# ========== Model ==========
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, max_len=500):
         super().__init__()
@@ -89,7 +100,7 @@ class TransformerModel(nn.Module):
         x = self.transformer(x, src_key_padding_mask=mask)
         return self.fc(torch.stack([x[i, l - 1] for i, l in enumerate(lengths)])).squeeze()
 
-# ========== Training Function ==========
+# ========== Training ==========
 def train_transformer_model(
     input_size=5,
     d_model=32,
@@ -112,8 +123,7 @@ def train_transformer_model(
 
     best_loss, no_improve = float("inf"), 0
     for epoch in range(max_epochs):
-        model.train()
-        total = 0
+        model.train(); total = 0
         for xb, yb, lengths in train_loader:
             xb, yb = xb.to(device), yb.to(device)
             loss = criterion(model(xb, lengths), yb)
@@ -167,15 +177,15 @@ def train_transformer_model(
 # ========== Grid Search ==========
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 log_path = f"gridsearch_log_{timestamp}.txt"
-sys.stdout = open(log_path, "w")
+sys.stdout = Logger(log_path)
 
 param_grid = {
-    "d_model": [16, 32, 64],
-    "nhead": [2, 4],
-    "layers": [1, 2],
-    "dropout": [0.1],
-    "lr": [1e-3, 5e-4],
-    "batch_size": [64, 128],
+    "d_model": [32, 64, 128],
+    "nhead": [2, 4, 8],
+    "layers": [1, 2, 3],
+    "dropout": [0.1, 0.3],
+    "lr": [1e-3, 5e-4, 1e-4],
+    "batch_size": [32, 64, 128],
 }
 
 param_combos = list(product(*param_grid.values()))
@@ -191,6 +201,6 @@ for i, combo in enumerate(param_combos):
     except Exception as e:
         print(f"Error with config {params}: {e}")
 
-sys.stdout.close()
+sys.stdout.log.close()
 sys.stdout = sys.__stdout__
-print(f"Grid search complete. Output saved to: {log_path}")
+print(f"✅ Grid search complete. Output saved to: {log_path}")
