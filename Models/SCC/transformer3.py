@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 import torch
@@ -22,7 +23,7 @@ class Logger:
     def write(self, message):
         self.terminal.write(message)
         self.log.write(message)
-    def flush(self):  # needed for Python 3 compatibility
+    def flush(self):
         self.terminal.flush()
         self.log.flush()
 
@@ -121,7 +122,7 @@ def train_transformer_model(
     dropout=0.3,
     lr=0.0005,
     batch_size=128,
-    seed=42,
+    seed=12,
     max_epochs=100,
     patience=5,
     verbose=True
@@ -176,22 +177,24 @@ def train_transformer_model(
             all_true.extend(yb.int().cpu().tolist())
 
     print("\nClassification Report:")
-    print(classification_report(all_true, all_preds, digits=4))
+    report = classification_report(all_true, all_preds, digits=4)
+    print(report)
 
+    # save confusion matrix as png
     cm = confusion_matrix(all_true, all_preds)
     plt.figure(figsize=(6, 4))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                xticklabels=["No Mastitis", "Subclinical Mastitis"],
-                yticklabels=["No Mastitis", "Subclinical Mastitis"])
-    plt.title("Confusion Matrix")
-    plt.xlabel("Predicted")
-    plt.ylabel("True")
+    sns.heatmap(
+        cm, annot=True, fmt='d', cmap='Blues',
+        xticklabels=["No Mastitis", "Subclinical Mastitis"],
+        yticklabels=["No Mastitis", "Subclinical Mastitis"]
+    )
+    plt.xlabel("Predicted Label")
+    plt.ylabel("True Label")
     plt.tight_layout()
+    plt.savefig("confusion_matrix.png", dpi=600)
     plt.show()
 
     accuracy = accuracy_score(all_true, all_preds)
-    report = classification_report(all_true, all_preds, digits=4)
-
     params = {
         "d_model": d_model, "nhead": nhead, "layers": layers, "dropout": dropout,
         "lr": lr, "batch_size": batch_size, "seed": seed
@@ -199,42 +202,6 @@ def train_transformer_model(
 
     return accuracy, report, params
 
-# ========== Seed Sweeps ==========
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-log_path = f"seed_sweep_log_{timestamp}.txt"
-sys.stdout = Logger(log_path)
-
-fixed_params = {
-    "d_model": 32,
-    "nhead": 2,
-    "layers": 2,
-    "dropout": 0.3,
-    "lr": 0.0005,
-    "batch_size": 128
-}
-
-for seed in range(20):
-    params = fixed_params.copy()
-    params["seed"] = seed
-    print("\n" + "=" * 80)
-    print(f"Running model with seed = {seed}")
-    print("=" * 80)
-
-    try:
-        accuracy, report, best_params = train_transformer_model(**params)
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        with open("seed_variation_results.txt", "a") as f:
-            f.write(f"Seed {seed} | Accuracy: {round(accuracy, 4)} | Timestamp: {timestamp}\n")
-            f.write("Parameters:\n")
-            f.write(json.dumps(best_params, indent=2))
-            f.write("\n\nClassification Report:\n")
-            f.write(report + "\n")
-            f.write("=" * 80 + "\n\n")
-
-    except Exception as e:
-        print(f"Error with seed {seed}: {e}")
-
-sys.stdout.log.close()
-sys.stdout = sys.__stdout__
-print(f"✅ Seed sweep complete. Output saved to: {log_path}")
+# ========== Run Seed 12 Only ==========
+accuracy, report, params = train_transformer_model(seed=12)
+print(f"\n✅ Done. Accuracy with seed 12: {accuracy:.4f}")
