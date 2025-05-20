@@ -135,7 +135,10 @@ def train_transformer_model(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TransformerModel(input_size, d_model, nhead, layers, dropout).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.BCEWithLogitsLoss()
+
+    # artificially increase penalty for missing a positive (1)
+    recall_priority_weight = 2.0  # try 1.5–3.0 for stronger recall emphasis
+    criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([recall_priority_weight], device=device))
 
     best_loss, no_improve = float("inf"), 0
     for epoch in range(max_epochs):
