@@ -5,6 +5,7 @@ from torch.nn.utils.rnn import pad_sequence
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, confusion_matrix
 from collections import Counter
+from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 from itertools import product
@@ -174,10 +175,24 @@ def train_transformer_model(
     plt.tight_layout()
     plt.show()
 
+    accuracy = accuracy_score(all_true, all_preds)
+    report = classification_report(all_true, all_preds, digits=4)
+
+    return accuracy, report, params
+
+
+
 # ========== Grid Search ==========
+import heapq
+import json
+
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 log_path = f"gridsearch_log_{timestamp}.txt"
 sys.stdout = Logger(log_path)
+
+top_10_runs = []  # stores (-accuracy, timestamp, report_text, param_dict)
+top_10_limit = 10
+top_10_path = "top_10_results.txt"
 
 param_grid = {
     "d_model": [32, 64, 128],
@@ -197,7 +212,23 @@ for i, combo in enumerate(param_combos):
     print(f"Starting to run model with hyperparameters: {params}")
     print("=" * 80)
     try:
-        train_transformer_model(**params)
+        accuracy, report, best_params = train_transformer_model(**params)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Insert into min-heap if top 10 or better than current worst
+        heapq.heappush(top_10_runs, (-accuracy, timestamp, report, best_params))
+        top_10_runs = heapq.nsmallest(top_10_limit, top_10_runs)  # keep only top 10
+
+        # rewrite top 10 report file
+        with open(top_10_path, "w") as f:
+            for rank, (acc_neg, ts, rep, prm) in enumerate(sorted(top_10_runs, reverse=True), 1):
+                f.write(f"Rank {rank} | Accuracy: {round(-acc_neg, 4)} | Timestamp: {ts}\n")
+                f.write("Parameters:\n")
+                f.write(json.dumps(prm, indent=2))
+                f.write("\n\nClassification Report:\n")
+                f.write(rep + "\n")
+                f.write("=" * 80 + "\n\n")
+
     except Exception as e:
         print(f"Error with config {params}: {e}")
 
