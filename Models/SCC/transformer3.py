@@ -1,14 +1,16 @@
-import pandas as pd, numpy as np, torch, sys
+import pandas as pd
+import numpy as np
+import torch
+import sys
+import random
+import json
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_sequence
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import classification_report, confusion_matrix
-from collections import Counter
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
-from itertools import product
 from datetime import datetime
 from Models.SCC.helper import split_by_id_ratio_1_to_4
 
@@ -23,6 +25,15 @@ class Logger:
     def flush(self):  # needed for Python 3 compatibility
         self.terminal.flush()
         self.log.flush()
+
+# ========= Seed setup =========
+def set_seed(seed):
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 # ========== Config ==========
 DATA_PATH = "Data/Dairycomp_data/balanced_output.csv"
@@ -105,15 +116,18 @@ class TransformerModel(nn.Module):
 def train_transformer_model(
     input_size=5,
     d_model=32,
-    nhead=4,
+    nhead=2,
     layers=2,
-    dropout=0.1,
-    lr=1e-3,
+    dropout=0.3,
+    lr=0.0005,
     batch_size=128,
+    seed=42,
     max_epochs=100,
     patience=5,
     verbose=True
 ):
+    set_seed(seed)
+
     train_loader = DataLoader(train_loader_base.dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(val_loader_base.dataset, batch_size=batch_size, collate_fn=collate_fn)
 
@@ -178,60 +192,49 @@ def train_transformer_model(
     accuracy = accuracy_score(all_true, all_preds)
     report = classification_report(all_true, all_preds, digits=4)
 
+    params = {
+        "d_model": d_model, "nhead": nhead, "layers": layers, "dropout": dropout,
+        "lr": lr, "batch_size": batch_size, "seed": seed
+    }
+
     return accuracy, report, params
 
-
-
-# ========== Grid Search ==========
-import heapq
-import json
-
+# ========== Seed Sweeps ==========
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-log_path = f"gridsearch_log_{timestamp}.txt"
+log_path = f"seed_sweep_log_{timestamp}.txt"
 sys.stdout = Logger(log_path)
 
-top_10_runs = []  # stores (-accuracy, timestamp, report_text, param_dict)
-top_10_limit = 10
-top_10_path = "top_10_results.txt"
-
-param_grid = {
-    "d_model": [32, 64, 128],
-    "nhead": [2, 4, 8],
-    "layers": [1, 2, 3],
-    "dropout": [0.1, 0.3],
-    "lr": [1e-3, 5e-4, 1e-4],
-    "batch_size": [32, 64, 128],
+fixed_params = {
+    "d_model": 32,
+    "nhead": 2,
+    "layers": 2,
+    "dropout": 0.3,
+    "lr": 0.0005,
+    "batch_size": 128
 }
 
-param_combos = list(product(*param_grid.values()))
-param_names = list(param_grid.keys())
-
-for i, combo in enumerate(param_combos):
-    params = dict(zip(param_names, combo))
+for seed in range(20):
+    params = fixed_params.copy()
+    params["seed"] = seed
     print("\n" + "=" * 80)
-    print(f"Starting to run model with hyperparameters: {params}")
+    print(f"Running model with seed = {seed}")
     print("=" * 80)
+
     try:
         accuracy, report, best_params = train_transformer_model(**params)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Insert into min-heap if top 10 or better than current worst
-        heapq.heappush(top_10_runs, (-accuracy, timestamp, report, best_params))
-        top_10_runs = heapq.nsmallest(top_10_limit, top_10_runs)  # keep only top 10
-
-        # rewrite top 10 report file
-        with open(top_10_path, "w") as f:
-            for rank, (acc_neg, ts, rep, prm) in enumerate(sorted(top_10_runs, reverse=True), 1):
-                f.write(f"Rank {rank} | Accuracy: {round(-acc_neg, 4)} | Timestamp: {ts}\n")
-                f.write("Parameters:\n")
-                f.write(json.dumps(prm, indent=2))
-                f.write("\n\nClassification Report:\n")
-                f.write(rep + "\n")
-                f.write("=" * 80 + "\n\n")
+        with open("seed_variation_results.txt", "a") as f:
+            f.write(f"Seed {seed} | Accuracy: {round(accuracy, 4)} | Timestamp: {timestamp}\n")
+            f.write("Parameters:\n")
+            f.write(json.dumps(best_params, indent=2))
+            f.write("\n\nClassification Report:\n")
+            f.write(report + "\n")
+            f.write("=" * 80 + "\n\n")
 
     except Exception as e:
-        print(f"Error with config {params}: {e}")
+        print(f"Error with seed {seed}: {e}")
 
 sys.stdout.log.close()
 sys.stdout = sys.__stdout__
-print(f"✅ Grid search complete. Output saved to: {log_path}")
+print(f"✅ Seed sweep complete. Output saved to: {log_path}")
