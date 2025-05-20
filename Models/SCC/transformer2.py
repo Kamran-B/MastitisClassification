@@ -164,15 +164,22 @@ def train_transformer_model(
 
 
 from itertools import product
+import sys
+import datetime
+
+# ======== Redirect stdout to a log file ========
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+log_path = f"gridsearch_log_{timestamp}.txt"
+sys.stdout = open(log_path, "w")
 
 # ======== Define Parameter Grid ========
 param_grid = {
-    "d_model": [16, 32, 64],
+    "d_model": [32, 64],
     "nhead": [2, 4],
     "layers": [1, 2],
-    "dropout": [0.1, 0.2],
-    "lr": [1e-3, 2e-3, 5e-4],
-    "batch_size": [32, 64, 128],
+    "dropout": [0.1],
+    "lr": [1e-3, 5e-4],
+    "batch_size": [64, 128],
 }
 
 # ======== Generate All Combinations ========
@@ -181,10 +188,18 @@ param_names = list(param_grid.keys())
 
 # ======== Run Grid Search ========
 for i, combo in enumerate(param_combos):
-    print("=" * 60)
-    print(f"Running config {i + 1}/{len(param_combos)}")
+    print("=" * 80)
+    print(f"Running config {i+1}/{len(param_combos)}")
     params = dict(zip(param_names, combo))
     print("Hyperparameters:", params)
-    print("=" * 60)
+    print("=" * 80)
 
-    train_transformer_model(**params)
+    try:
+        train_transformer_model(**params)
+    except Exception as e:
+        print(f"Error with config {params}: {e}")
+
+# ======== Close log file and reset stdout ========
+sys.stdout.close()
+sys.stdout = sys.__stdout__
+print(f"Grid search complete. Output saved to: {log_path}")
