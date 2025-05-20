@@ -165,7 +165,7 @@ def train_transformer_model(
 
 from itertools import product
 import sys
-import datetime
+from datetime import datetime
 
 # ======== Redirect stdout to a log file ========
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
